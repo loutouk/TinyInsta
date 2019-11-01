@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<head>
+    <meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
+    <title>TinyInsta</title>
+    <style>
+	.post-img { width: 300px; }
+	h1 { color: rgb(34, 147, 245); margin: 15px; }
+	body { font-family: "Verdana", "Times New Roman", Times, serif; }
+	hr { width:100%; height:1px; background: #fff; margin-bottom: 8px; }
+	form { margin-bottom: 10px; }
+	</style>
+</head>
+
+<body>
+
+
+
+
+<script src="https://unpkg.com/mithril/mithril.js"></script>
+
+
+
+
+
+<script>
+
+function setFormActionUrl(vnode) {
+    fetch("http://localhost:8080/blobstore-upload-url")
+        .then((response) => {
+            return response.text();
+        })
+        .then((imageUploadUrl) => {
+            const messageForm = document.getElementById("createPostForm");
+            messageForm.action = imageUploadUrl;
+
+        });
+}
+
+function fetchSession() {
+    fetch("http://localhost:8080/session")
+        .then(response => response.text())
+        .then(data => {
+            Session.current.name = data
+            Session.listPost()
+        })
+}
+
+var SearchForm = {
+    values: {},
+}
+
+var Session = {
+    current: {},
+    userPost: [],
+    listPost: function() {
+        return m.request({
+                method: "GET",
+                url: "http://localhost:8080/_ah/api/myApi/v1/getSubscriberPost/:userName",
+                params: {
+                    userName: Session.current.name
+                },
+            })
+            .then(function(result) {
+                if (result != null) {
+                    Session.userPost = result.items
+                } else {
+                    Session.userPost = null
+                }
+
+            })
+    }
+}
+
+
+function createUserPage(userName) {
+
+    m.request({
+            method: "GET",
+            url: "http://localhost:8080/_ah/api/myApi/v1/getUser/:name",
+            params: {
+                name: Session.current.name
+            },
+        })
+        .then(function(result) {
+            if (result != null) {
+
+                var followText = "";
+                var alreadyFollowed = false;
+
+                // We look if our subscriptions list values match the user name rather than look if our name is in the user's followers
+                // Because we generally do not follow huge amount of people this method is faster
+                if (typeof result.properties.subscriptions !== 'undefined' && result.properties.subscriptions.includes(userName)) {
+                    followText = "Unfollow"
+                    alreadyFollowed = true
+                } else {
+
+                    followText = "Follow"
+                    alreadyFollowed = false
+                }
+
+                m.request({
+                        method: "GET",
+                        url: "http://localhost:8080/_ah/api/myApi/v1/getUserPost/:userName",
+                        params: {
+                            userName: userName
+                        },
+                    })
+                    .then(function(result) {
+
+
+                        m.mount(document.body, null) // Clean the body
+                        m.render(document.body, m("div", {
+                                class: "user-div"
+                            },
+                            [
+                                m("div", m(MenuLogo)),
+
+
+                                m("h2", "About " + userName),
+
+
+
+                                m(
+                                    "button", {
+                                        id: "follow_btn",
+                                        class: "follow_btn",
+                                        onclick: function() {
+
+
+                                            if (alreadyFollowed == false) {
+
+                                                m.request({
+                                                        method: "GET",
+                                                        url: "http://localhost:8080/_ah/api/myApi/v1/followUser/:follower/:followee",
+                                                        params: {
+                                                            follower: Session.current.name,
+                                                            followee: userName
+                                                        },
+                                                    })
+                                                    .then(function(result) {
+                                                        var x = document.getElementById("follow_btn").innerHTML = "Unfollow"
+                                                    })
+
+
+                                            } else {
+
+                                                // TODO
+                                                alert("TODO")
+                                            }
+
+
+
+                                        },
+                                    }, followText
+                                ),
+
+
+                                m("hr", ),
+                                m(PostGenerator, {
+                                    postItems: result.items
+                                }),
+                            ]))
+                        m.redraw()
+                    })
+
+
+            } else {
+
+                alert("no user found")
+            }
+        })
+
+}
+
+function createHashtagPage(hashtagParam) {
+    if (hashtagParam != null && hashtagParam.length > 0) {
+        m.request({
+                method: "GET",
+                url: "http://localhost:8080/_ah/api/myApi/v1/getHashtagPost/:hashtag",
+                params: {
+                    hashtag: hashtagParam
+                },
+            })
+            .then(function(result) {
+                m.mount(document.body, null) // Clean the body
+                m.render(document.body, m("div", {
+                        class: "hashtagposts-div"
+                    },
+                    [
+                        m("div", m(MenuLogo)),
+                        m("h2", "All posts with #" + hashtagParam),
+                        m(
+                            "button", {
+                                class: "follow_btn",
+                                onclick: function() {
+
+                                },
+                            }, "Un/Follow"
+                        ),
+                        m("hr", ),
+                        m(PostGenerator, {
+                            postItems: result.items
+                        }),
+                    ]))
+                m.redraw()
+
+            })
+    }
+}
+
+function likePost(postId) {
+    alert("TODO scalable fashion " + postId)
+}
+
+
+var MenuLogo = {
+    view: function() {
+        return m("h1",
+            [
+                m("a[href='http://localhost:8080/']", "TinyInsta"),
+            ],
+        )
+    }
+}
+
+var PostGenerator = {
+    view: function(vnode) {
+
+        if(vnode.attrs.postItems == null) {
+            return m("div", "No posts found.")
+        }
+
+        return m(".post-list", vnode.attrs.postItems.map(function(item) {
+            return m(".post-list-item",
+                [
+                    m(
+                        "p",
+                        [
+                            m(
+                                "button", {
+                                    class: "user_btn",
+                                    onclick: function() {
+                                        createUserPage(item.properties.name)
+                                    },
+                                }, item.properties.name
+                            ),
+                            m(
+                                "button", {
+                                    class: "hashtag-btn",
+                                    onclick: function() {
+                                        createHashtagPage(item.properties.hashtag)
+                                    },
+                                }, item.properties.hashtag
+                            ),
+                            m(
+                                "button", {
+                                    class: "like_btn",
+                                    onclick: function() {
+                                        likePost(item.key.id)
+                                    },
+                                }, "Like"
+                            ),
+                        ],
+                        " The " + item.properties.date
+                    ),
+
+                    m(
+                        "img", {
+                            class: "post-img",
+                            src: item.properties.image
+                        }
+                    ),
+
+                    m(
+                        "hr",
+                    ),
+                ])
+        }))
+    },
+}
+
+
+var PostView = {
+    oninit: fetchSession,
+    view: function() {
+        return m(PostGenerator, {
+            postItems: Session.userPost
+        })
+    },
+}
+
+
+
+
+var Main = {
+    view: function() {
+        return m("main", [
+
+            m("div", m(MenuLogo)),
+
+            m("form", {
+                    id: "logoutForm",
+                    method: "GET",
+                    action: "http://localhost:8080/logout",
+                },
+                [
+                    m("h3", "Connected as " + Session.current.name),
+                    m("button.button[type=submit]", "Logout"),
+                ]),
+
+            m("form", {
+                onsubmit: function(e) {
+                    e.preventDefault()
+                    createUserPage(SearchForm.values.username)
+                }
+            }, [
+                m("label.label", "name"),
+                m("input.input[type=text][placeholder=name]", {
+                    oninput: function(e) {
+                        SearchForm.values.username = e.target.value
+                    },
+                }),
+                m("button.button[type=submit]", "Search user"),
+            ]),
+
+            m("form", {
+                    id: "createPostForm",
+                    method: "POST",
+                    enctype: "multipart/form-data",
+                    oncreate: setFormActionUrl
+                },
+                [
+                    // User name is used in the form to send the ajax request, it does not need to be shown
+                    m("label.label", {
+                        style: {
+                            display: "none"
+                        }
+                    }, "User "),
+                    m("input.input[type=text][value=" + Session.current.name + "][name=name]", {
+                        style: {
+                            display: "none"
+                        }
+                    }),
+                    m("label.label", "Hashtag "),
+                    m("input.input[type=text][placeholder=hashtag][name=hashtag]"),
+                    m("input[type=file][name=image]"),
+                    m("button.button[type=submit]", "Post"),
+                ]),
+
+            m("hr", ),
+
+            m("div", {
+                id: "posts"
+            }, m(PostView)),
+
+
+        ])
+    }
+}
+
+m.mount(document.body, Main)
+
+</script>
+
+
+
+
+
+
+
+
+
+</body>
+
+
+
+</html>

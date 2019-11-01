@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>jQuery UI Autocomplete - Remote datasource</title>
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script src="https://unpkg.com/mithril/mithril.js"></script>
+
+    <script>
+
+    function testF(a) {
+        alert(a);
+    }
+
+    $(function() {
+        $("#searchBar").autocomplete({
+            delay: 300,
+            minLength: 0,
+            source: "http://localhost:8080/search",
+            focus: function(event, ui) {
+                event.preventDefault(); // prevent autocomplete from updating the textbox
+            },
+            select: function(event, ui) {}
+        }).data("ui-autocomplete")._renderItem = function(ul, result) {
+            console.log(result);
+            var $list = $('<div/>');
+            $.each(result, function(key, value) {
+                var $li = $('<li/>')
+                    .addClass('some-class')
+                    .html(value.properties.name)
+                    .click(function() {
+                        testF(value.key.id);
+                    });
+                $list.append($li);
+            });
+            return $($list).appendTo(ul)
+        };
+    });
+  </script>
+</head>
+<body>
+
+<div class="ui-widget">
+    <label for="searchBar">Search: </label>
+    <input id="searchBar"  name="name">
+</div>
+
+<div class="ui-widget" style="margin-top:2em; font-family:Arial">
+    Result:
+    <div id="log" style="height: 200px; width: 300px; overflow: auto;" class="ui-widget-content"></div>
+</div>
+
+
+</body>
+</html>

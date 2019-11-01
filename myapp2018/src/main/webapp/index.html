@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<head>
+	<meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
+	<title>TinyInsta</title>
+	<style>
+	h1 h2 { color: rgb(34, 147, 245); margin: 15px; }
+	body { font-family: "Verdana", "Times New Roman", Times, serif; }
+	hr { width:100%; height:1px; background: #fff; margin-bottom: 8px; }
+	</style>
+</head>
+<body>
+
+<script src="https://unpkg.com/mithril/mithril.js"></script>
+
+<script>
+
+var AddUser = {
+    current: {},
+    add: function() {
+        return m.request({
+                method: "PUT",
+                url: "http://localhost:8080/_ah/api/myApi/v1/addUser/:name",
+                params: {
+                    name: AddUser.current.name
+                },
+            })
+            .then(function(result) {
+                if (result != null) {
+                    alert("creation successful.")
+                } else {
+                    alert("error creation. Try another name.")
+                }
+            })
+    }
+}
+
+
+var Main = {
+    view: function() {
+
+        return m("main", [
+
+            m("h1", {
+                class: "title"
+            }, "TinyInsta"),
+
+            m("h2", {
+                class: "title"
+            }, "Log In"),
+
+
+            m("form", {
+                    id: "loginForm",
+                    action: "http://localhost:8080/log",
+                    method: "POST",
+                },
+                [
+                    m("label.label", "User name"),
+                    m("input.input[type=text][placeholder=User name][name=name]"),
+                    m("button.button[type=submit]", "Connect"),
+                ]),
+
+            m("form", {
+                    onsubmit: function(e) {
+                        e.preventDefault()
+                        AddUser.add()
+                    },
+                    id: "addUserForm",
+                },
+                [
+                    m("label.label", "User name"),
+                    m("input.input[type=text][placeholder=name][name=name]", {
+                        oninput: function(e) {
+                            AddUser.current.name = e.target.value
+                        },
+                    }),
+                    m("button.button[type=submit]", "Create User"),
+                ]),
+
+        ])
+    }
+}
+
+m.mount(document.body, Main)
+
+</script>
+
+</body>
+</html>

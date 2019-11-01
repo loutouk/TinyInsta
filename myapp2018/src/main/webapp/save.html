@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<head>
+    <meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
+    <title>TinyInsta</title>
+    <style>
+	.post-img { width: 300px; }
+	h1 { color: rgb(34, 147, 245); margin: 15px; }
+	body { font-family: "Verdana", "Times New Roman", Times, serif; }
+	hr { width:100%; height:1px; background: #fff; margin-bottom: 8px; }
+	</style>
+</head>
+
+<body>
+
+
+
+
+<script src="https://unpkg.com/mithril/mithril.js"></script>
+
+<script>
+
+	function setFormActionUrl(vnode) {
+		fetch("http://localhost:8080/blobstore-upload-url")
+		  .then((response) => {
+			return response.text();
+		  })
+		  .then((imageUploadUrl) => {
+			const messageForm = document.getElementById("createPostForm");
+			messageForm.action = imageUploadUrl;
+
+		  });
+	}
+
+	var AddUser = {
+		current: {},
+		add: function() {
+	        return m.request({
+	            method: "GET",
+	            url: "http://localhost:8080/_ah/api/myApi/v1/addUser/" + AddUser.current.name
+	        })
+	        .then(function(result) {
+	        	console.log(result);
+	        })
+	    }
+	}
+
+	var UserPost = {
+		current: {},
+		list: function() {
+	        return m.request({
+	            method: "GET",
+	            url: "http://localhost:8080/_ah/api/myApi/v1/getSubscriberPost/" + UserPost.current.name
+	        })
+	        .then(function(result) {
+	        	console.log(result);
+	        })
+	    }
+	}
+
+	var FollowerUser = {
+		current: {},
+		follow: function() {
+	        return m.request({
+	            method: "GET",
+	            url: "http://localhost:8080/_ah/api/myApi/v1/followUser/" + FollowerUser.current.follower + "/" + FollowerUser.current.followee
+	        })
+	        .then(function(result) {
+	        	console.log(result);
+	        })
+	    }
+	}
+
+	var Post = {
+            list: [],
+            loadList: function() {
+                return m.request({
+                    method: "GET",
+                    url: "http://localhost:8080/_ah/api/myApi/v1/getAllPost"
+                })
+                .then(function(result) {
+                    Post.list = result.items
+                    m.redraw(true) // force
+                })
+            }
+        }
+
+	var PostView = {
+            oninit: Post.loadList,
+            view: function() {
+                return m(".user-list", Post.list.map(function(item) {
+                    return m(".user-list-item",
+                    [
+						m("p", "Posted by " + item.properties.name + " the " + item.properties.date + ". Tags: " + item.properties.hashtag),
+						m("img", {class: "post-img", src: item.properties.image}),
+						m("hr",),
+					])
+				}))
+            },
+    }
+
+	var Main = {
+		view: function() {
+
+			return m("main", [
+
+				m("h1", {class: "title"}, "TinyInsta"),
+
+                m("form",
+                {
+                    id: "logoutForm",
+                    method: "GET",
+                    action: "http://localhost:8080/logout",
+                },
+                [
+                    m("button.button[type=submit]", "Logout"),
+                ]),
+
+				m("div", {id: "posts"}, m(PostView)),
+
+				m("form",
+					{
+						id: "createPostForm",
+						method: "POST",
+						enctype: "multipart/form-data",
+						oncreate: setFormActionUrl
+					},
+					[
+						m("label.label", "name"),
+						m("input.input[type=text][placeholder=Publisher name][name=name]"),
+						m("label.label", "hashtag"),
+						m("input.input[type=text][placeholder=hashtag][name=hashtag]"),
+						m("input[type=file][name=image]"),
+						m("button.button[type=submit]", "Post"),
+					]),
+
+				m("hr",),
+
+				m("form",
+				{
+					onsubmit: function(e) {
+	                    e.preventDefault()
+	                    AddUser.add()
+	                },
+					id: "addUserForm",
+				},
+				[
+					m("label.label", "name"),
+					m("input.input[type=text][placeholder=name][name=name]", {
+	                	oninput: function (e) {AddUser.current.name = e.target.value},
+	            	}),
+					m("button.button[type=submit]", "Create User"),
+				]),
+
+				m("hr",),
+
+				m("form",
+				{
+					onsubmit: function(e) {
+	                    e.preventDefault()
+	                    FollowerUser.follow()
+	                },
+	                id: "followerUserForm",
+				},
+				[
+					m("label.label", "follower"),
+					m("input.input[type=text][placeholder=follower][name=follower]", {
+	                	oninput: function (e) {FollowerUser.current.follower = e.target.value},
+	            	}),
+	            	m("label.label", "followee"),
+					m("input.input[type=text][placeholder=followee][name=followee]", {
+	                	oninput: function (e) {FollowerUser.current.followee = e.target.value},
+	            	}),
+					m("button.button[type=submit]", "Follow"),
+				]),
+
+				m("hr",),
+
+				m("form",
+				{
+					onsubmit: function(e) {
+	                    e.preventDefault()
+	                    UserPost.list()
+	                },
+					id: "getUserPost",
+				},
+				[
+					m("label.label", "User name"),
+					m("input.input[type=text][placeholder=User name][name=name]", {
+	                	oninput: function (e) {UserPost.current.name = e.target.value},
+	            	}),
+					m("button.button[type=submit]", "Get posts"),
+				]),
+
+				m("hr",),
+
+
+			])
+		}
+	}
+
+	m.mount(document.body, Main)
+
+	var name = "";
+	const url = "http://localhost:8080/session"
+    fetch(url)
+    .then(response => response.text())
+    .then(data => name = data)
+
+</script>
+
+
+
+
+
+
+
+
+
+</body>
+
+
+
+</html>
