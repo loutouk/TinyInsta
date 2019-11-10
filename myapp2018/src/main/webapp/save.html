@@ -207,6 +207,55 @@
     .then(response => response.text())
     .then(data => name = data)
 
+    function upload(e) {
+
+    var file = e.target.files[0]
+    var base64String = ""
+
+    var reader  = new FileReader();
+    reader.readAsDataURL(file);
+
+    reader.addEventListener(
+        "load", function () {
+            base64String = reader.result;
+
+            // Result cannot be directly decoded as Base64 without removing Data-URL declaration
+            // First remove data:*/*;base64, from the result
+
+            base64String = base64String.replace("data:*/*;base64,", "");
+
+            console.log(base64String)
+
+            m.request({
+                method: "POST",
+                url: "http://localhost:8080/_ah/api/myApi/v1/testPost",
+                body: {image: base64String}
+            })
+
+        }, false
+    );
+
+
+}
+
+m("input[type=file][name=image]", {onchange: upload})
+
+
+/*@ApiMethod(name = "testPost", path = "testPost", httpMethod = ApiMethod.HttpMethod.POST)
+public Blob testPost(@Named("image") String base64ImageString) {
+
+    System.out.println("Image \n\n " + base64ImageString);
+
+
+    Storage storage = StorageOptions.getDefaultInstance().getService();
+    BlobId blobId = BlobId.of("mystical-app-220509.appspot.com", "blob_name");
+    BlobInfo blobInfo = BlobInfo.newBuilder(blobId).setContentType("text/plain").build();
+    Blob blob = storage.create(blobInfo, base64ImageString.getBytes(UTF_8));
+
+    return blob;
+
+}*/
+
 </script>
 
 

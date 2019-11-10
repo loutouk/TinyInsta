@@ -19,9 +19,9 @@ var AddUser = {
     current: {},
     add: function() {
         return m.request({
-                method: "PUT",
-                url: "http://localhost:8080/_ah/api/myApi/v1/addUser/:name",
-                params: {
+                method: "POST",
+                url: "http://localhost:8080/_ah/api/myApi/v1/addUser",
+                body: {
                     name: AddUser.current.name
                 },
             })
@@ -35,6 +35,18 @@ var AddUser = {
     }
 }
 
+function uploadSave(e) {
+    var file = e.target.files[0]
+
+    var body = new FormData()
+    body.append("image", file)
+
+    m.request({
+        method: "POST",
+        url: "http://localhost:8080/_ah/api/myApi/v1/testPost",
+        body: body
+    })
+}
 
 var Main = {
     view: function() {
@@ -83,6 +95,10 @@ var Main = {
 }
 
 m.mount(document.body, Main)
+
+
+
+
 
 </script>
 

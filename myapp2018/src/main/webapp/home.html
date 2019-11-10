@@ -75,101 +75,140 @@ var Session = {
 
 function createUserPage(userName) {
 
+
     m.request({
-            method: "GET",
-            url: "http://localhost:8080/_ah/api/myApi/v1/getUser/:name",
-            params: {
-                name: Session.current.name
-            },
-        })
-        .then(function(result) {
-            if (result != null) {
+
+        method: "GET",
+        url: "http://localhost:8080/_ah/api/myApi/v1/getUserLight/:userName",
+        params: {
+            userName: userName
+        },
+
+    })
+    .then(function(resultUser) {
+
+        console.log(resultUser)
+
+        if(resultUser != null) {
+
+
+            m.request({
+                method: "GET",
+                url: "http://localhost:8080/_ah/api/myApi/v1/getUserPost/:userName",
+                params: {
+                    userName: userName
+                },
+            })
+            .then(function(resultPosts) {
+
+
+            console.log(resultPosts)
+
+
+            m.request({
+                method: "GET",
+                url: "http://localhost:8080/_ah/api/myApi/v1/isSubscribed/:userA/:userB",
+                params: {
+                    userA: Session.current.name,
+                    userB: userName
+                },
+            })
+            .then(function(resultSubscribed) {
+
+                console.log(resultSubscribed)
 
                 var followText = "";
                 var alreadyFollowed = false;
 
-                // We look if our subscriptions list values match the user name rather than look if our name is in the user's followers
-                // Because we generally do not follow huge amount of people this method is faster
-                if (typeof result.properties.subscriptions !== 'undefined' && result.properties.subscriptions.includes(userName)) {
+
+                if (resultSubscribed != null) {
+
                     followText = "Unfollow"
                     alreadyFollowed = true
+
                 } else {
 
                     followText = "Follow"
                     alreadyFollowed = false
                 }
 
-                m.request({
-                        method: "GET",
-                        url: "http://localhost:8080/_ah/api/myApi/v1/getUserPost/:userName",
-                        params: {
-                            userName: userName
-                        },
-                    })
-                    .then(function(result) {
+                m.mount(document.body, null) // Clean the body
+                m.render(document.body, m("div", {
+                    class: "user-div"
+                },
+                [
+                    m("div", m(MenuLogo)),
 
 
-                        m.mount(document.body, null) // Clean the body
-                        m.render(document.body, m("div", {
-                                class: "user-div"
-                            },
-                            [
-                                m("div", m(MenuLogo)),
-
-
-                                m("h2", "About " + userName),
+                    m("h2", "About " + userName),
 
 
 
-                                m(
-                                    "button", {
-                                        id: "follow_btn",
-                                        class: "follow_btn",
-                                        onclick: function() {
+                    m(
+                        "button", {
+                            id: "follow_btn",
+                            class: "follow_btn",
+                            onclick: function() {
 
 
-                                            if (alreadyFollowed == false) {
+                                if (alreadyFollowed == false) {
 
-                                                m.request({
-                                                        method: "GET",
-                                                        url: "http://localhost:8080/_ah/api/myApi/v1/followUser/:follower/:followee",
-                                                        params: {
-                                                            follower: Session.current.name,
-                                                            followee: userName
-                                                        },
-                                                    })
-                                                    .then(function(result) {
-                                                        var x = document.getElementById("follow_btn").innerHTML = "Unfollow"
-                                                    })
-
-
-                                            } else {
-
-                                                // TODO
-                                                alert("TODO")
-                                            }
-
-
-
+                                    m.request({
+                                        method: "GET",
+                                        url: "http://localhost:8080/_ah/api/myApi/v1/followUser/:follower/:followee",
+                                        params: {
+                                            follower: Session.current.name,
+                                            followee: userName
                                         },
-                                    }, followText
-                                ),
+                                    })
+                                    .then(function(result) {
+                                        alreadyFollowed = true
+                                        var x = document.getElementById("follow_btn").innerHTML = "Unfollow"
+                                    })
 
 
-                                m("hr", ),
-                                m(PostGenerator, {
-                                    postItems: result.items
-                                }),
-                            ]))
-                        m.redraw()
-                    })
+                                } else {
+
+                                    m.request({
+                                        method: "GET",
+                                        url: "http://localhost:8080/_ah/api/myApi/v1/unfollowUser/:follower/:followee",
+                                        params: {
+                                            follower: Session.current.name,
+                                            followee: userName
+                                        },
+                                    })
+                                    .then(function(result) {
+                                        alreadyFollowed = false
+                                        var x = document.getElementById("follow_btn").innerHTML = "Follow"
+                                    })
+
+                                }
 
 
-            } else {
 
-                alert("no user found")
-            }
-        })
+                            },
+                        }, followText
+                    ),
+
+
+                    m("hr", ),
+                    m(PostGenerator, {
+                        postItems: resultPosts.items
+                    }),
+                ]))
+
+
+                })
+
+                m.redraw()
+            })
+
+
+        } else {
+            alert("no user found")
+        }
+
+    })
 
 }
 
@@ -190,14 +229,6 @@ function createHashtagPage(hashtagParam) {
                     [
                         m("div", m(MenuLogo)),
                         m("h2", "All posts with #" + hashtagParam),
-                        m(
-                            "button", {
-                                class: "follow_btn",
-                                onclick: function() {
-
-                                },
-                            }, "Un/Follow"
-                        ),
                         m("hr", ),
                         m(PostGenerator, {
                             postItems: result.items
@@ -210,7 +241,7 @@ function createHashtagPage(hashtagParam) {
 }
 
 function likePost(postId) {
-    alert("TODO scalable fashion " + postId)
+    alert("TODO scalable fashion grow only " + postId)
 }
 
 
