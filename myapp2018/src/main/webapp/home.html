@@ -263,6 +263,7 @@ var PostGenerator = {
         }
 
         return m(".post-list", vnode.attrs.postItems.map(function(item) {
+
             return m(".post-list-item",
                 [
                     m(
@@ -276,14 +277,28 @@ var PostGenerator = {
                                     },
                                 }, item.properties.name
                             ),
+
+
                             m(
-                                "button", {
-                                    class: "hashtag-btn",
-                                    onclick: function() {
-                                        createHashtagPage(item.properties.hashtag)
-                                    },
-                                }, item.properties.hashtag
+                                ".hashtag-list", item.properties.hashtag.map(function(hashtag) {
+
+                                    return m(
+                                        "button", {
+                                            class: "hashtag-btn",
+                                            onclick: function() {
+                                                createHashtagPage(hashtag)
+                                            },
+                                        }, hashtag
+                                    )
+
+                                })
                             ),
+
+
+
+
+
+
                             m(
                                 "button", {
                                     class: "like_btn",
@@ -374,7 +389,7 @@ var Main = {
                         }
                     }),
                     m("label.label", "Hashtag "),
-                    m("input.input[type=text][placeholder=hashtag][name=hashtag]"),
+                    m("input.input[type=text][placeholder='HashtagOne, HashtagB...'][name=hashtag]"),
                     m("input[type=file][name=image]"),
                     m("button.button[type=submit]", "Post"),
                 ]),

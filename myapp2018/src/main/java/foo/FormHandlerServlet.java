@@ -11,9 +11,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @WebServlet("/my-form-handler")
 public class FormHandlerServlet extends HttpServlet {
@@ -48,7 +46,9 @@ public class FormHandlerServlet extends HttpServlet {
                 // Create Post entity with its User as parent
                 Entity e = new Entity("Post", followeeEntity.getKey());
                 e.setProperty("name", name);
-                e.setProperty("hashtag", hashtag);
+                // Regex splits the string on a delimiter defined as: zero or more whitespace, a literal comma, zero or more whitespace
+                ArrayList<String> hashtagList = new ArrayList<>(Arrays.asList(hashtag.split("\\s*,\\s*")));
+                e.setProperty("hashtag", hashtagList);
                 e.setProperty("image", imageUrl);
                 e.setProperty("date", new Date());
                 datastore.put(e);
