@@ -1,34 +1,22 @@
 package foo;
 
 
-import com.google.api.client.util.Base64;
 import com.google.api.server.spi.config.Api;
 import com.google.api.server.spi.config.ApiMethod;
 import com.google.api.server.spi.config.ApiNamespace;
 import com.google.api.server.spi.config.Named;
-
 import com.google.appengine.api.datastore.*;
 import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.datastore.Query.FilterPredicate;
-import com.google.cloud.storage.Blob;
-import com.google.cloud.storage.BlobId;
-import com.google.cloud.storage.BlobInfo;
-import com.google.cloud.storage.Storage;
-import com.google.cloud.storage.StorageOptions;
-import org.apache.commons.fileupload.FileItemIterator;
-import org.apache.commons.fileupload.servlet.ServletFileUpload;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 
 @Api(name = "myApi", version = "v1", namespace = @ApiNamespace(ownerDomain = "helloworld.example.com", ownerName = "helloworld.example.com", packagePath = ""))
 
 public class PostEndpoint {
+
+	private final int TRANSACTION_RETRIES = 3; // At most 3 tries for commiting a transaction
 
 	// Returns every posts
 	@ApiMethod(name = "getAllPost", path = "getAllPost", httpMethod = ApiMethod.HttpMethod.GET)
@@ -90,24 +78,58 @@ public class PostEndpoint {
 	// Creates a user
 	@ApiMethod(name = "addUser", path = "addUser", httpMethod = ApiMethod.HttpMethod.POST)
 	public Entity addUser(@Named("name") String name) {
-		// Check if the user does not already exist with the same name
-		Query q = new Query("User")
-				.setFilter(new FilterPredicate("name", FilterOperator.EQUAL, name));
-		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
-		PreparedQuery pq = datastore.prepare(q);
-		List<Entity> result = pq.asList(FetchOptions.Builder.withDefaults());
-		if(result != null && result.size() > 0){
-			return null;
+
+		int retries = 0;
+		int delay = 1; // seconds before first retry
+
+		while (true) {
+
+			DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+			// Requires transaction in case a user is created with the same name between the verifying operation and the creation
+			Transaction txn = datastore.beginTransaction();
+
+			try {
+
+				Query q = new Query("User")
+						.setFilter(new FilterPredicate("name", FilterOperator.EQUAL, name));
+				// Check if the user does not already exist with the same name
+				PreparedQuery pq = datastore.prepare(q);
+				List<Entity> result = pq.asList(FetchOptions.Builder.withDefaults());
+				if(result != null && result.size() > 0){
+					return null;
+				}
+
+				Entity e = new Entity("User");
+				e.setProperty("name", name);
+				e.setProperty("subscribers", new ArrayList<String>());
+				e.setProperty("subscriptions", new ArrayList<String>());
+				e.setProperty("date", new Date());
+				datastore.put(e);
+
+				txn.commit();
+				return e;
+
+			} catch (ConcurrentModificationException e) {
+				if (retries >= TRANSACTION_RETRIES) {
+					throw e;
+				}
+				// Allow retry to occur
+				++retries;
+			} finally {
+				if (txn.isActive()) {
+					txn.rollback();
+				}
+			}
+
+			try {
+				Thread.sleep(delay * 1000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			delay *= 2; // easy exponential backoff
+
 		}
 
-		Entity e = new Entity("User");
-		e.setProperty("name", name);
-		e.setProperty("subscribers", new ArrayList<String>());
-		e.setProperty("subscriptions", new ArrayList<String>());
-		e.setProperty("date", new Date());
-		datastore = DatastoreServiceFactory.getDatastoreService();
-		datastore.put(e);
-		return e;
 	}
 
 	// Faster: Retrieves only the name property of the user
@@ -178,54 +200,91 @@ public class PostEndpoint {
 	@ApiMethod(name = "followUser", path = "followUser/{follower}/{followee}", httpMethod = ApiMethod.HttpMethod.GET)
 	public Entity followUser(@Named("follower") String follower, @Named("followee") String followee) {
 
-		// Retrieve the followee
-		Query q = new Query("User")
-				.setFilter(new FilterPredicate("name", FilterOperator.EQUAL, followee));
-		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
-		PreparedQuery pq = datastore.prepare(q);
-		List<Entity> result = pq.asList(FetchOptions.Builder.withDefaults());
+		int retries = 0;
+		int delay = 1; // Seconds before first retry
 
-		// Abort if the followee does not exist
-		if(result == null || result.size() < 1){
-			return null;
+		while (true) {
+
+			DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+			// Requires a transaction in case the userA already un/follow userB meanwhile
+			/* Cross-group transactions (also called XG transactions) operate across multiple entity groups,
+			behaving like single-group transactions described above except that cross-group transactions
+			don't fail if code tries to update entities from more than one entity group. */
+			TransactionOptions options = TransactionOptions.Builder.withXG(true);
+			Transaction txn = datastore.beginTransaction(options);
+
+			try {
+
+				Query q = new Query("User")
+						.setFilter(new FilterPredicate("name", FilterOperator.EQUAL, followee));
+				// Retrieve the followee
+				PreparedQuery pq = datastore.prepare(q);
+				List<Entity> result = pq.asList(FetchOptions.Builder.withDefaults());
+
+				// Abort if the followee does not exist
+				if(result == null || result.size() < 1){
+					return null;
+				}
+
+				// There should be only one element in the list because of name uniqueness
+				Entity followeeEntity = result.get(0);
+				// Adding the follower to its subscribers
+				ArrayList<String> subscribers = (ArrayList<String>) followeeEntity.getProperty("subscribers");
+				if(subscribers == null){
+					subscribers = new ArrayList<>();
+				}
+				subscribers.add(follower);
+				followeeEntity.setProperty("subscribers", subscribers);
+				datastore.put(followeeEntity);
+
+
+				// Retrieve the follower
+				q = new Query("User")
+						.setFilter(new FilterPredicate("name", FilterOperator.EQUAL, follower));
+				datastore = DatastoreServiceFactory.getDatastoreService();
+				pq = datastore.prepare(q);
+				result = pq.asList(FetchOptions.Builder.withDefaults());
+
+				// Abort if the follower does not exist
+				if(result == null || result.size() < 1){
+					return null;
+				}
+
+				// There should be only one element in the list because of name uniqueness
+				Entity followerEntity = result.get(0);
+				// Adding the follower to its subscribers
+				subscribers = (ArrayList<String>) followerEntity.getProperty("subscriptions");
+				if(subscribers == null){
+					subscribers = new ArrayList<>();
+				}
+				subscribers.add(followee);
+				followerEntity.setProperty("subscriptions", subscribers);
+				datastore.put(followerEntity);
+
+				txn.commit();
+
+				return followeeEntity;
+
+			} catch (ConcurrentModificationException e) {
+				if (retries >= TRANSACTION_RETRIES) {
+					throw e;
+				}
+				// Allow retry to occur
+				++retries;
+			} finally {
+				if (txn.isActive()) {
+					txn.rollback();
+				}
+			}
+
+			try {
+				Thread.sleep(delay * 1000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			delay *= 2; // easy exponential backoff
 		}
 
-		// There should be only one element in the list because of name uniqueness
-		Entity followeeEntity = result.get(0);
-		// Adding the follower to its subscribers
-		ArrayList<String> subscribers = (ArrayList<String>) followeeEntity.getProperty("subscribers");
-		if(subscribers == null){
-			subscribers = new ArrayList<>();
-		}
-		subscribers.add(follower);
-		followeeEntity.setProperty("subscribers", subscribers);
-		datastore.put(followeeEntity);
-
-
-		// Retrieve the follower
-		q = new Query("User")
-				.setFilter(new FilterPredicate("name", FilterOperator.EQUAL, follower));
-		datastore = DatastoreServiceFactory.getDatastoreService();
-		pq = datastore.prepare(q);
-		result = pq.asList(FetchOptions.Builder.withDefaults());
-
-		// Abort if the follower does not exist
-		if(result == null || result.size() < 1){
-			return null;
-		}
-
-		// There should be only one element in the list because of name uniqueness
-		Entity followerEntity = result.get(0);
-		// Adding the follower to its subscribers
-		subscribers = (ArrayList<String>) followerEntity.getProperty("subscriptions");
-		if(subscribers == null){
-			subscribers = new ArrayList<>();
-		}
-		subscribers.add(followee);
-		followerEntity.setProperty("subscriptions", subscribers);
-		datastore.put(followerEntity);
-
-		return followeeEntity;
 	}
 
 	// Removes a follower from a followee subscribers
@@ -233,54 +292,88 @@ public class PostEndpoint {
 	@ApiMethod(name = "unfollowUser", path = "unfollowUser/{follower}/{followee}", httpMethod = ApiMethod.HttpMethod.GET)
 	public Entity unfollowUser(@Named("follower") String follower, @Named("followee") String followee) {
 
-		// Retrieve the followee
-		Query q = new Query("User")
-				.setFilter(new FilterPredicate("name", FilterOperator.EQUAL, followee));
-		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
-		PreparedQuery pq = datastore.prepare(q);
-		List<Entity> result = pq.asList(FetchOptions.Builder.withDefaults());
+		int retries = 0;
+		int delay = 1; // Seconds before first retry
 
-		// Abort if the followee does not exist
-		if(result == null || result.size() < 1){
-			return null;
+		while (true) {
+
+			DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+			// Requires a transaction in case the userA already un/follow userB meanwhile
+			TransactionOptions options = TransactionOptions.Builder.withXG(true);
+			Transaction txn = datastore.beginTransaction(options);
+
+			try {
+
+				// Retrieve the followee
+				Query q = new Query("User")
+						.setFilter(new FilterPredicate("name", FilterOperator.EQUAL, followee));
+				PreparedQuery pq = datastore.prepare(q);
+				List<Entity> result = pq.asList(FetchOptions.Builder.withDefaults());
+
+				// Abort if the followee does not exist
+				if(result == null || result.size() < 1){
+					return null;
+				}
+
+				// There should be only one element in the list because of name uniqueness
+				Entity followeeEntity = result.get(0);
+				// Adding the follower to its subscribers
+				ArrayList<String> subscribers = (ArrayList<String>) followeeEntity.getProperty("subscribers");
+				if(subscribers == null){
+					subscribers = new ArrayList<>();
+				}
+				subscribers.removeAll(Collections.singleton(follower)); // There may be duplicates in the names
+				followeeEntity.setProperty("subscribers", subscribers);
+				datastore.put(followeeEntity);
+
+
+				// Retrieve the follower
+				q = new Query("User")
+						.setFilter(new FilterPredicate("name", FilterOperator.EQUAL, follower));
+				datastore = DatastoreServiceFactory.getDatastoreService();
+				pq = datastore.prepare(q);
+				result = pq.asList(FetchOptions.Builder.withDefaults());
+
+				// Abort if the follower does not exist
+				if(result == null || result.size() < 1){
+					return null;
+				}
+
+				// There should be only one element in the list because of name uniqueness
+				Entity followerEntity = result.get(0);
+				// Adding the follower to its subscribers
+				subscribers = (ArrayList<String>) followerEntity.getProperty("subscriptions");
+				if(subscribers == null){
+					subscribers = new ArrayList<>();
+				}
+				subscribers.removeAll(Collections.singleton(followee)); // There may be duplicates in the names
+				followerEntity.setProperty("subscriptions", subscribers);
+				datastore.put(followerEntity);
+
+				txn.commit();
+
+				return followeeEntity;
+
+			} catch (ConcurrentModificationException e) {
+				if (retries >= TRANSACTION_RETRIES) {
+					throw e;
+				}
+				// Allow retry to occur
+				++retries;
+			} finally {
+				if (txn.isActive()) {
+					txn.rollback();
+				}
+			}
+
+			try {
+				Thread.sleep(delay * 1000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			delay *= 2; // easy exponential backoff
 		}
 
-		// There should be only one element in the list because of name uniqueness
-		Entity followeeEntity = result.get(0);
-		// Adding the follower to its subscribers
-		ArrayList<String> subscribers = (ArrayList<String>) followeeEntity.getProperty("subscribers");
-		if(subscribers == null){
-			subscribers = new ArrayList<>();
-		}
-		subscribers.removeAll(Collections.singleton(follower)); // There may be duplicates in the names
-		followeeEntity.setProperty("subscribers", subscribers);
-		datastore.put(followeeEntity);
-
-
-		// Retrieve the follower
-		q = new Query("User")
-				.setFilter(new FilterPredicate("name", FilterOperator.EQUAL, follower));
-		datastore = DatastoreServiceFactory.getDatastoreService();
-		pq = datastore.prepare(q);
-		result = pq.asList(FetchOptions.Builder.withDefaults());
-
-		// Abort if the follower does not exist
-		if(result == null || result.size() < 1){
-			return null;
-		}
-
-		// There should be only one element in the list because of name uniqueness
-		Entity followerEntity = result.get(0);
-		// Adding the follower to its subscribers
-		subscribers = (ArrayList<String>) followerEntity.getProperty("subscriptions");
-		if(subscribers == null){
-			subscribers = new ArrayList<>();
-		}
-		subscribers.removeAll(Collections.singleton(followee)); // There may be duplicates in the names
-		followerEntity.setProperty("subscriptions", subscribers);
-		datastore.put(followerEntity);
-
-		return followeeEntity;
 	}
 
 }
