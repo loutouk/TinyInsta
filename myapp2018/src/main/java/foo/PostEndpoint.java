@@ -17,6 +17,7 @@ import java.util.*;
 public class PostEndpoint {
 
 	private final int TRANSACTION_RETRIES = 3; // At most 3 tries for commiting a transaction
+	private final int LIKE_COUNTER_MAX_SHARD = 20;
 
 	// Returns every posts
 	@ApiMethod(name = "getAllPost", path = "getAllPost", httpMethod = ApiMethod.HttpMethod.GET)
@@ -126,7 +127,7 @@ public class PostEndpoint {
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-			delay *= 2; // easy exponential backoff
+			delay *= 2; // Easy exponential backoff
 
 		}
 
@@ -282,7 +283,7 @@ public class PostEndpoint {
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-			delay *= 2; // easy exponential backoff
+			delay *= 2; // Easy exponential backoff
 		}
 
 	}
@@ -371,9 +372,158 @@ public class PostEndpoint {
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
-			delay *= 2; // easy exponential backoff
+			delay *= 2; // Easy exponential backoff
 		}
 
 	}
+
+	// Like a post
+	// No verification: considers the call legitimate
+	// Warning: no lock on the referenced post to like (might be deleted meanwhile for example)
+	/* We use sharded counter(CRDT) to address the contention problem.
+	We can only expect to update any single entity or entity group about five times a second.
+	We arbitrarily consider that a number of 20 fragments (example) is sufficient to absorb the contention
+	(20 shards * 5 writes/second is roughly equivalent to 100 likes/second). */
+	@ApiMethod(name = "like", path = "like/{postId}/{parentId}/{userName}", httpMethod = ApiMethod.HttpMethod.POST)
+	public Object like(@Named("postId") String postId, @Named("parentId") String parentId, @Named("userName") String userName) {
+
+		int retries = 0;
+		int delay = 1; // Seconds before first retry
+
+		while (true) {
+
+			DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+			// Requires a transaction because the counter may be updated by another instance meanwhile
+			Transaction txn = datastore.beginTransaction();
+			Entity likeShard = null;
+
+			try {
+
+				// Using a random entity amongst many allows us to address contention on the like button (see CRDT)
+				int randomCounterId = new Random().nextInt(LIKE_COUNTER_MAX_SHARD) + 1;
+
+				Key likeShardKey = KeyFactory.createKey("LikeShard", Long.parseLong(postId) + randomCounterId);
+
+				try {
+					likeShard = datastore.get(likeShardKey);
+				} catch (EntityNotFoundException e) {
+					// The LikeShard with the rand id might not exist yet, so we create it
+					// Creating it at this stage allows us to increase the LIKE_COUNTER_MAX_SHARD easily and only create shards when necessary
+					likeShard = new Entity("LikeShard", Long.parseLong(postId) + randomCounterId);
+					// Init likeShard
+					likeShard.setProperty("UserAndPostid", new ArrayList<>()); // Home made composite index without combinatorial explosion drawback
+					likeShard.setProperty("LikesCount", new Long(0)); // Just a shortcut to sum the list above
+				}
+				// Now the entity should not be null
+				Long likesCount = (Long) likeShard.getProperty("LikesCount");
+				likeShard.setProperty("LikesCount", likesCount + 1);
+				ArrayList<String> userAndPostIndex = (ArrayList<String>) likeShard.getProperty("UserAndPostid");
+				if(userAndPostIndex == null) {
+					userAndPostIndex = new ArrayList<>(); // Can happen we the LikeShard was created but all the likes inside have been removed
+				}
+				userAndPostIndex.add(userName+postId);
+				likeShard.setProperty("UserAndPostid", userAndPostIndex);
+				datastore.put(likeShard);
+				txn.commit();
+				return likeShard; // TODO stop returning entity object but return json object ERROR or OK
+
+			} catch (ConcurrentModificationException e) {
+				if (retries >= TRANSACTION_RETRIES) {
+					throw e;
+				}
+				// Allow retry to occur
+				++retries;
+			} finally {
+				if (txn.isActive()) {
+					txn.rollback();
+				}
+			}
+
+			try {
+				Thread.sleep(delay * 1000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			delay *= 2; // Easy exponential backoff
+		}
+
+	}
+
+	// Remvoe a like from a post for a given user
+	// No verification: considers the call legitimate
+	@ApiMethod(name = "unlike", path = "unlike/{postId}/{userName}", httpMethod = ApiMethod.HttpMethod.POST)
+	public Object unlike(@Named("postId") String postId, @Named("userName") String userName) {
+
+		int retries = 0;
+		int delay = 1; // Seconds before first retry
+
+		while (true) {
+
+			DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+			Transaction txn = datastore.beginTransaction();
+
+			try {
+
+				Query q = new Query("LikeShard")
+						.setFilter(new FilterPredicate("UserAndPostid", FilterOperator.EQUAL, userName+postId));
+				datastore = DatastoreServiceFactory.getDatastoreService();
+				PreparedQuery pq = datastore.prepare(q);
+				List<Entity> result = pq.asList(FetchOptions.Builder.withDefaults());
+				// There should be only one element because of name uniqueness + postid uniqueness
+				if(result != null && result.size() > 0){
+					Entity likeShard = result.get(0);
+					Long likesCount = (Long) likeShard.getProperty("LikesCount");
+
+					ArrayList<String> userAndPostIndex = (ArrayList<String>) likeShard.getProperty("UserAndPostid");
+					// There should be no duplicate. Otherwise use removeAll(Collections.singleton(foo))
+					if(userAndPostIndex.remove(userName+postId)){
+						likeShard.setProperty("UserAndPostid", userAndPostIndex);
+						likeShard.setProperty("LikesCount", likesCount - 1);
+						datastore.put(likeShard);
+						txn.commit();
+						return likeShard; // TODO stop returning entity object but return json object ERROR or OK
+					} else {
+						// Not suppose to happen because we already found this index with the setFilter at this point
+						return null;
+					}
+
+				} else {
+					return null; // Error, like not found. Should not happen because of the lock.
+				}
+
+
+			} catch (ConcurrentModificationException e) {
+				if (retries >= TRANSACTION_RETRIES) {
+					throw e;
+				}
+				// Allow retry to occur
+				++retries;
+			} finally {
+				if (txn.isActive()) {
+					txn.rollback();
+				}
+			}
+
+			try {
+				Thread.sleep(delay * 1000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			delay *= 2; // Easy exponential backoff
+		}
+
+	}
+
+	// Has a post been liked by a user ?
+	@ApiMethod(name = "isliked", path = "isliked/{postId}/{userName}", httpMethod = ApiMethod.HttpMethod.GET)
+	public Object isliked(@Named("postId") String postId, @Named("userName") String userName) {
+		Query q = new Query("LikeShard")
+				.setFilter(new FilterPredicate("UserAndPostid", FilterOperator.EQUAL, userName+postId));
+		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+		PreparedQuery pq = datastore.prepare(q);
+		List<Entity> result = pq.asList(FetchOptions.Builder.withDefaults());
+		return (result != null && result.size() > 0) ? result.get(0) : null; // TODO return json ok or error
+	}
+
 
 }

@@ -240,8 +240,83 @@ function createHashtagPage(hashtagParam) {
     }
 }
 
-function likePost(postId) {
-    alert("TODO scalable fashion grow only " + postId)
+function LikeBtnGenerator() {
+
+    var likeText
+    var alreadyLiked
+    var postId
+
+    return {
+
+        oninit: function(vnode) {
+
+            postId = vnode.attrs.postIdParam
+            likeText = ""
+            alreadyLiked = false
+
+            m.request({
+                method: "GET",
+                url: "http://localhost:8080/_ah/api/myApi/v1/isliked/:postId/:userName",
+                params: {
+                    postId: postId.id,
+                    userName: Session.current.name
+                },
+            })
+            .then(function(resultLiked) {
+                console.log(resultLiked)
+
+                if (resultLiked != null) {
+                    likeText = "Unlike"
+                    alreadyLiked = true
+                } else {
+                    likeText = "Like"
+                    alreadyLiked = false
+                }
+
+            })
+
+
+        }, view: function(vnode) {
+
+
+             return m( "button", {
+                    id: postId.id,
+                    class: "like_btn",
+                    onclick: function() {
+                        if (alreadyLiked == false) {
+                            m.request({
+                                method: "POST",
+                                url: "http://localhost:8080/_ah/api/myApi/v1/like/:postId/:parentId/:userName",
+                                params: {
+                                    postId: postId.id,
+                                    parentId: postId.parent.id,
+                                    userName: Session.current.name
+                                },
+                            })
+                            .then(function(result) {
+                                console.log(result)
+                                alreadyLiked = true
+                                var x = document.getElementById(postId.id).innerHTML = "Unlike"
+                            })
+                        } else {
+                            m.request({
+                                method: "POST",
+                                url: "http://localhost:8080/_ah/api/myApi/v1/unlike/:postId/:userName",
+                                params: {
+                                    postId: postId.id,
+                                    userName: Session.current.name
+                                },
+                            })
+                            .then(function(result) {
+                                console.log(result)
+                                alreadyLiked = false
+                                var x = document.getElementById(postId.id).innerHTML = "Like"
+                            })
+                        }
+                    }
+                }, likeText)
+        }
+    }
 }
 
 
@@ -294,19 +369,8 @@ var PostGenerator = {
                                 })
                             ),
 
+                            m(LikeBtnGenerator, {postIdParam: item.key}),
 
-
-
-
-
-                            m(
-                                "button", {
-                                    class: "like_btn",
-                                    onclick: function() {
-                                        likePost(item.key.id)
-                                    },
-                                }, "Like"
-                            ),
                         ],
                         " The " + item.properties.date
                     ),
