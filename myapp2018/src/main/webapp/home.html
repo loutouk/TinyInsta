@@ -87,8 +87,6 @@ function createUserPage(userName) {
     })
     .then(function(resultUser) {
 
-        console.log(resultUser)
-
         if(resultUser != null) {
 
 
@@ -101,10 +99,6 @@ function createUserPage(userName) {
             })
             .then(function(resultPosts) {
 
-
-            console.log(resultPosts)
-
-
             m.request({
                 method: "GET",
                 url: "http://localhost:8080/_ah/api/myApi/v1/isSubscribed/:userA/:userB",
@@ -114,8 +108,6 @@ function createUserPage(userName) {
                 },
             })
             .then(function(resultSubscribed) {
-
-                console.log(resultSubscribed)
 
                 var followText = "";
                 var alreadyFollowed = false;
@@ -240,6 +232,31 @@ function createHashtagPage(hashtagParam) {
     }
 }
 
+function LikeCountGenerator() {
+    var counterText
+    var postId
+    return {
+        oninit: function(vnode) {
+            postId = vnode.attrs.postIdParam
+            m.request({
+                method: "GET",
+                url: "http://localhost:8080/_ah/api/myApi/v1/likesNumber/:postId",
+                params: {
+                    postId: postId.id,
+                },
+            })
+            .then(function(result) {
+                counterText = result
+            })
+        }, view: function(vnode) {
+             return m( "span", {
+                    id: "likeText" + postId.id,
+                    class: "like_count",
+                }, counterText)
+        }
+    }
+}
+
 function LikeBtnGenerator() {
 
     var likeText
@@ -256,15 +273,13 @@ function LikeBtnGenerator() {
 
             m.request({
                 method: "GET",
-                url: "http://localhost:8080/_ah/api/myApi/v1/isliked/:postId/:userName",
+                url: "http://localhost:8080/_ah/api/myApi/v1/isLiked/:postId/:userName",
                 params: {
                     postId: postId.id,
                     userName: Session.current.name
                 },
             })
             .then(function(resultLiked) {
-                console.log(resultLiked)
-
                 if (resultLiked != null) {
                     likeText = "Unlike"
                     alreadyLiked = true
@@ -277,7 +292,6 @@ function LikeBtnGenerator() {
 
 
         }, view: function(vnode) {
-
 
              return m( "button", {
                     id: postId.id,
@@ -294,9 +308,12 @@ function LikeBtnGenerator() {
                                 },
                             })
                             .then(function(result) {
-                                console.log(result)
                                 alreadyLiked = true
-                                var x = document.getElementById(postId.id).innerHTML = "Unlike"
+                                document.getElementById(postId.id).innerHTML = "Unlike"
+                                var count = document.getElementById("likeText" + postId.id).innerHTML
+                                var editedCount = parseInt(count) + 1
+                                document.getElementById("likeText" + postId.id).innerHTML = editedCount
+
                             })
                         } else {
                             m.request({
@@ -308,9 +325,11 @@ function LikeBtnGenerator() {
                                 },
                             })
                             .then(function(result) {
-                                console.log(result)
                                 alreadyLiked = false
-                                var x = document.getElementById(postId.id).innerHTML = "Like"
+                                document.getElementById(postId.id).innerHTML = "Like"
+                                var count = document.getElementById("likeText" + postId.id).innerHTML
+                                var editedCount = parseInt(count) - 1
+                                document.getElementById("likeText" + postId.id).innerHTML = editedCount
                             })
                         }
                     }
@@ -369,6 +388,8 @@ var PostGenerator = {
                                 })
                             ),
 
+                            m(LikeCountGenerator, {postIdParam: item.key}),
+                            m("span", " like "),
                             m(LikeBtnGenerator, {postIdParam: item.key}),
 
                         ],

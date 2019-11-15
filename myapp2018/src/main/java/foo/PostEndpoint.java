@@ -17,7 +17,7 @@ import java.util.*;
 public class PostEndpoint {
 
 	private final int TRANSACTION_RETRIES = 3; // At most 3 tries for commiting a transaction
-	private final int LIKE_COUNTER_MAX_SHARD = 20;
+	private final int LIKE_COUNTER_MAX_SHARD = 2;
 
 	// Returns every posts
 	@ApiMethod(name = "getAllPost", path = "getAllPost", httpMethod = ApiMethod.HttpMethod.GET)
@@ -411,6 +411,7 @@ public class PostEndpoint {
 					// Creating it at this stage allows us to increase the LIKE_COUNTER_MAX_SHARD easily and only create shards when necessary
 					likeShard = new Entity("LikeShard", Long.parseLong(postId) + randomCounterId);
 					// Init likeShard
+					likeShard.setProperty("PostId", postId);
 					likeShard.setProperty("UserAndPostid", new ArrayList<>()); // Home made composite index without combinatorial explosion drawback
 					likeShard.setProperty("LikesCount", new Long(0)); // Just a shortcut to sum the list above
 				}
@@ -515,14 +516,36 @@ public class PostEndpoint {
 	}
 
 	// Has a post been liked by a user ?
-	@ApiMethod(name = "isliked", path = "isliked/{postId}/{userName}", httpMethod = ApiMethod.HttpMethod.GET)
-	public Object isliked(@Named("postId") String postId, @Named("userName") String userName) {
+	@ApiMethod(name = "isLiked", path = "isLiked/{postId}/{userName}", httpMethod = ApiMethod.HttpMethod.GET)
+	public Object isLiked(@Named("postId") String postId, @Named("userName") String userName) {
 		Query q = new Query("LikeShard")
 				.setFilter(new FilterPredicate("UserAndPostid", FilterOperator.EQUAL, userName+postId));
 		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 		PreparedQuery pq = datastore.prepare(q);
 		List<Entity> result = pq.asList(FetchOptions.Builder.withDefaults());
 		return (result != null && result.size() > 0) ? result.get(0) : null; // TODO return json ok or error
+	}
+
+	// How many likes a post has?
+	@ApiMethod(name = "likesNumber", path = "likesNumber/{postId}/", httpMethod = ApiMethod.HttpMethod.GET)
+	public Object likesNumber(@Named("postId") String postId) {
+		Query q = new Query("LikeShard")
+				.setFilter(new FilterPredicate("PostId", FilterOperator.EQUAL, postId));
+		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+		PreparedQuery pq = datastore.prepare(q);
+		List<Entity> result = pq.asList(FetchOptions.Builder.withDefaults());
+		Long likesCounter = new Long(0);
+		if (result != null && result.size() > 0) {
+
+			for(Entity shard : result) {
+				if(shard.hasProperty("LikesCount")){
+					Long shardLikes = (Long) shard.getProperty("LikesCount");
+					likesCounter = Long.sum(shardLikes, likesCounter);
+
+				}
+			}
+		}
+		return likesCounter;
 	}
 
 
