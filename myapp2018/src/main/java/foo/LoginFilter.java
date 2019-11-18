@@ -9,6 +9,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * handles filter to administrate which client can access which resource using session identification
+ * not deployed
+ *
+ * @author  LASHERME Loic, FILAUDEAU Eloi, BOURSIER Louis
+ * @version 1.0
+ */
 @WebFilter("/tofilter/*") // Filter scope, all pages matching the url pattern will have the filter applied to them
 public class LoginFilter implements Filter {
 

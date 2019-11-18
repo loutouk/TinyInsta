@@ -9,17 +9,30 @@ import com.google.appengine.api.datastore.*;
 import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.datastore.Query.FilterPredicate;
 
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.util.*;
 
-
+/**
+ * the endpoint for the application's API. User can access post, subscriptions, users...
+ * the API does not handle the creation of a publication
+ * no verification on the identity or rights of the caller: considers all the call legitimate
+ * consider implementing OAuth 2.0 to address this problem
+ * @see foo.BlobstoreUploadUrlServlet#doGet(HttpServletRequest, HttpServletResponse)
+ *
+ * @author  LASHERME Loic, FILAUDEAU Eloi, BOURSIER Louis
+ * @version 1.0
+ */
 @Api(name = "myApi", version = "v1", namespace = @ApiNamespace(ownerDomain = "helloworld.example.com", ownerName = "helloworld.example.com", packagePath = ""))
-
 public class PostEndpoint {
 
-	private final int TRANSACTION_RETRIES = 3; // At most 3 tries for commiting a transaction
-	private final int LIKE_COUNTER_MAX_SHARD = 2;
+	private final int TRANSACTION_RETRIES = 3; // The number of tries for a transaction to commit
+	private final int LIKE_COUNTER_MAX_SHARD = 20; // Number of shards for a like counter, can be increased to allow more load
 
-	// Returns every posts
+	/**
+	 * for demonstration mainly. Not supposed to be used after deployment
+	 * @return all the posts
+	 */
 	@ApiMethod(name = "getAllPost", path = "getAllPost", httpMethod = ApiMethod.HttpMethod.GET)
 	public List<Entity> getAllPost() {
 		Query q = new Query("Post");
@@ -29,7 +42,11 @@ public class PostEndpoint {
 		return result;
 	}
 
-	// Returns all posts for a given user, considering its subscriptions
+	/**
+	 *
+	 * @param userName the name of the user
+	 * @return all posts for a given user, considering its subscriptions
+	 */
 	@ApiMethod(name = "getSubscriberPost", path = "getSubscriberPost/{userName}", httpMethod = ApiMethod.HttpMethod.GET)
 	public List<Entity> getSubscriberPost(@Named("userName") String userName) {
 		// A keys-only query returns just the keys of the result entities instead of the entities themselves, at lower latency and cost than retrieving entire entities
@@ -54,7 +71,11 @@ public class PostEndpoint {
 		return posts;
 	}
 
-	// Returns all posts that belong to the specified user
+	/**
+	 *
+	 * @param userName the name of the user
+	 * @return all posts that belong to the specified user
+	 */
 	@ApiMethod(name = "getUserPost", path = "getUserPost/{userName}", httpMethod = ApiMethod.HttpMethod.GET)
 	public List<Entity> getUserPost(@Named("userName") String userName) {
 		Query q = new Query("Post")
@@ -65,7 +86,11 @@ public class PostEndpoint {
 		return result;
 	}
 
-	// Returns all posts that contain the specified hastag
+	/**
+	 *
+	 * @param hashtag
+	 * @return all posts that contain the specified hastag
+	 */
 	@ApiMethod(name = "getHashtagPost", path = "getHashtagPost/{hashtag}", httpMethod = ApiMethod.HttpMethod.GET)
 	public List<Entity> getHashtagPost(@Named("hashtag") String hashtag) {
 		Query q = new Query("Post")
@@ -76,7 +101,11 @@ public class PostEndpoint {
 		return result;
 	}
 
-	// Creates a user
+	/**
+	 * creates a user
+	 * @param name the user name
+	 * @return the user entity
+	 */
 	@ApiMethod(name = "addUser", path = "addUser", httpMethod = ApiMethod.HttpMethod.POST)
 	public Entity addUser(@Named("name") String name) {
 
@@ -133,7 +162,11 @@ public class PostEndpoint {
 
 	}
 
-	// Faster: Retrieves only the name property of the user
+	/**
+	 * faster: only retrieves the name property of the user
+	 * @param name
+	 * @return the name property of the user
+	 */
 	@ApiMethod(name = "getUserLight", path = "getUserLight/{name}", httpMethod = ApiMethod.HttpMethod.GET)
 	public Object getUserLight(@Named("name") String name) {
 		Query q = new Query("User")
@@ -145,7 +178,11 @@ public class PostEndpoint {
 		return (result != null && result.size() > 0) ? result.get(0).getProperty("name") : null; // In case user is not found
 	}
 
-	// Retrieves every properties fom the user
+	/**
+	 *
+	 * @param name
+	 * @return every properties fom the user
+	 */
 	@ApiMethod(name = "getUser", path = "getUser/{name}", httpMethod = ApiMethod.HttpMethod.GET)
 	public Entity getUser(@Named("name") String name) {
 		Query q = new Query("User")
@@ -157,6 +194,11 @@ public class PostEndpoint {
 		return (result != null && result.size() > 0) ? result.get(0) : null; // In case user is not found
 	}
 
+	/**
+	 *
+	 * @param name
+	 * @return the list of users a user is subscribed to
+	 */
 	@ApiMethod(name = "getUserSubscriptions", path = "getUserSubscriptions/{name}", httpMethod = ApiMethod.HttpMethod.GET)
 	public List<Entity> getUserSubscriptions(@Named("name") String name) {
 		Query q = new Query("User")
@@ -171,10 +213,14 @@ public class PostEndpoint {
 		return result;
 	}
 
-
-	// Does user A follows user B?
+	/**
+	 * does user A follows user B?
+	 * @param userA
+	 * @param userB
+	 * @return null if he does not follow, an object message if he follows
+	 */
 	@ApiMethod(name = "isSubscribed", path = "isSubscribed/{userA}/{userB}", httpMethod = ApiMethod.HttpMethod.GET)
-	public Object isSubscribed(@Named("userA") String userA, @Named("userB") String userB) {
+	public ReturnMessage isSubscribed(@Named("userA") String userA, @Named("userB") String userB) {
 		Query q = new Query("User")
 				.setFilter(new FilterPredicate("name", FilterOperator.EQUAL, userA));
 
@@ -188,7 +234,9 @@ public class PostEndpoint {
 			if(user.getProperty("subscriptions") != null){
 				ArrayList<String> subscriptions = (ArrayList<String>) user.getProperty("subscriptions");
 				if(subscriptions != null && subscriptions.contains(userB)){
-					return user;
+					ReturnMessage msg = new ReturnMessage();
+					msg.setMessage("ok");
+					return msg;
 				}
 			}
 		}
@@ -196,10 +244,15 @@ public class PostEndpoint {
 		return null;
 	}
 
-	// Makes a follower follow a followee.
-	// Maintains the subscribers and followers list in both followwee and follower entity to optimize access later on
+	/**
+	 * makes a follower follow a followee
+	 * maintains the subscribers and followers list in both followwee and follower entity to optimize access later on
+	 * @param follower
+	 * @param followee
+	 * @return object message if the operation is successful, null otherwise
+	 */
 	@ApiMethod(name = "followUser", path = "followUser/{follower}/{followee}", httpMethod = ApiMethod.HttpMethod.GET)
-	public Entity followUser(@Named("follower") String follower, @Named("followee") String followee) {
+	public ReturnMessage followUser(@Named("follower") String follower, @Named("followee") String followee) {
 
 		int retries = 0;
 		int delay = 1; // Seconds before first retry
@@ -263,8 +316,9 @@ public class PostEndpoint {
 				datastore.put(followerEntity);
 
 				txn.commit();
-
-				return followeeEntity;
+				ReturnMessage msg = new ReturnMessage();
+				msg.setMessage("ok");
+				return msg;
 
 			} catch (ConcurrentModificationException e) {
 				if (retries >= TRANSACTION_RETRIES) {
@@ -288,10 +342,14 @@ public class PostEndpoint {
 
 	}
 
-	// Removes a follower from a followee subscribers
-	// Maintains the subscribers and followers list in both followwee and follower entity to optimize access later on
+	/**
+	 * removes a follower from a followee subscribers
+	 * @param follower
+	 * @param followee
+	 * @return object message if the operation is successful, null otherwise
+	 */
 	@ApiMethod(name = "unfollowUser", path = "unfollowUser/{follower}/{followee}", httpMethod = ApiMethod.HttpMethod.GET)
-	public Entity unfollowUser(@Named("follower") String follower, @Named("followee") String followee) {
+	public ReturnMessage unfollowUser(@Named("follower") String follower, @Named("followee") String followee) {
 
 		int retries = 0;
 		int delay = 1; // Seconds before first retry
@@ -352,8 +410,9 @@ public class PostEndpoint {
 				datastore.put(followerEntity);
 
 				txn.commit();
-
-				return followeeEntity;
+				ReturnMessage msg = new ReturnMessage();
+				msg.setMessage("ok");
+				return msg;
 
 			} catch (ConcurrentModificationException e) {
 				if (retries >= TRANSACTION_RETRIES) {
@@ -377,15 +436,20 @@ public class PostEndpoint {
 
 	}
 
-	// Like a post
-	// No verification: considers the call legitimate
-	// Warning: no lock on the referenced post to like (might be deleted meanwhile for example)
-	/* We use sharded counter(CRDT) to address the contention problem.
-	We can only expect to update any single entity or entity group about five times a second.
-	We arbitrarily consider that a number of 20 fragments (example) is sufficient to absorb the contention
-	(20 shards * 5 writes/second is roughly equivalent to 100 likes/second). */
+	/**
+	 * like a post
+	 * warning: no lock on the referenced post to like (might be deleted meanwhile for example)
+	 * use sharded counter (CRDT) to address the contention problem
+	 * we can only expect to update any single entity or entity group about five times a second
+	 * we arbitrarily consider that a number of 20 fragments (example) is sufficient to absorb the contention
+	 * 20 shards * 5 writes/second is roughly equivalent to 100 likes/second)
+	 * @param postId the id field for the post datastore object
+	 * @param parentId the parent id of the post: it is the id of the user who published it
+	 * @param userName the name of the user
+	 * @return
+	 */
 	@ApiMethod(name = "like", path = "like/{postId}/{parentId}/{userName}", httpMethod = ApiMethod.HttpMethod.POST)
-	public Object like(@Named("postId") String postId, @Named("parentId") String parentId, @Named("userName") String userName) {
+	public ReturnMessage like(@Named("postId") String postId, @Named("parentId") String parentId, @Named("userName") String userName) {
 
 		int retries = 0;
 		int delay = 1; // Seconds before first retry
@@ -426,7 +490,9 @@ public class PostEndpoint {
 				likeShard.setProperty("UserAndPostid", userAndPostIndex);
 				datastore.put(likeShard);
 				txn.commit();
-				return likeShard; // TODO stop returning entity object but return json object ERROR or OK
+				ReturnMessage msg = new ReturnMessage();
+				msg.setMessage("ok");
+				return msg;
 
 			} catch (ConcurrentModificationException e) {
 				if (retries >= TRANSACTION_RETRIES) {
@@ -450,10 +516,14 @@ public class PostEndpoint {
 
 	}
 
-	// Remvoe a like from a post for a given user
-	// No verification: considers the call legitimate
+	/**
+	 * remove a like from a post for a given user
+	 * @param postId the id field for the post datastore object
+	 * @param userName the name of the user
+	 * @return
+	 */
 	@ApiMethod(name = "unlike", path = "unlike/{postId}/{userName}", httpMethod = ApiMethod.HttpMethod.POST)
-	public Object unlike(@Named("postId") String postId, @Named("userName") String userName) {
+	public ReturnMessage unlike(@Named("postId") String postId, @Named("userName") String userName) {
 
 		int retries = 0;
 		int delay = 1; // Seconds before first retry
@@ -482,7 +552,9 @@ public class PostEndpoint {
 						likeShard.setProperty("LikesCount", likesCount - 1);
 						datastore.put(likeShard);
 						txn.commit();
-						return likeShard; // TODO stop returning entity object but return json object ERROR or OK
+						ReturnMessage msg = new ReturnMessage();
+						msg.setMessage("ok");
+						return msg;
 					} else {
 						// Not suppose to happen because we already found this index with the setFilter at this point
 						return null;
@@ -497,14 +569,12 @@ public class PostEndpoint {
 				if (retries >= TRANSACTION_RETRIES) {
 					throw e;
 				}
-				// Allow retry to occur
-				++retries;
+				++retries; // Allow retry to occur
 			} finally {
 				if (txn.isActive()) {
 					txn.rollback();
 				}
 			}
-
 			try {
 				Thread.sleep(delay * 1000);
 			} catch (InterruptedException e) {
@@ -512,21 +582,30 @@ public class PostEndpoint {
 			}
 			delay *= 2; // Easy exponential backoff
 		}
-
 	}
 
-	// Has a post been liked by a user ?
+	/**
+	 * Has a post been liked by a user ?
+	 * @param postId the id field for the post datastore object
+	 * @param userName the name of the user
+	 * @return null if the post is liked, an object otherwise
+	 */
 	@ApiMethod(name = "isLiked", path = "isLiked/{postId}/{userName}", httpMethod = ApiMethod.HttpMethod.GET)
-	public Object isLiked(@Named("postId") String postId, @Named("userName") String userName) {
+	public ReturnMessage isLiked(@Named("postId") String postId, @Named("userName") String userName) {
 		Query q = new Query("LikeShard")
 				.setFilter(new FilterPredicate("UserAndPostid", FilterOperator.EQUAL, userName+postId));
 		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 		PreparedQuery pq = datastore.prepare(q);
 		List<Entity> result = pq.asList(FetchOptions.Builder.withDefaults());
-		return (result != null && result.size() > 0) ? result.get(0) : null; // TODO return json ok or error
+		ReturnMessage msg = new ReturnMessage();
+		msg.setMessage("ok");
+		return (result != null && result.size() > 0) ? msg : null;
 	}
 
-	// How many likes a post has?
+	/** How many likes a post has?
+	 * @param postId the id field for the post datastore object
+	 * @return the number of likes the post has
+	 */
 	@ApiMethod(name = "likesNumber", path = "likesNumber/{postId}/", httpMethod = ApiMethod.HttpMethod.GET)
 	public Object likesNumber(@Named("postId") String postId) {
 		Query q = new Query("LikeShard")
@@ -534,18 +613,49 @@ public class PostEndpoint {
 		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 		PreparedQuery pq = datastore.prepare(q);
 		List<Entity> result = pq.asList(FetchOptions.Builder.withDefaults());
-		Long likesCounter = new Long(0);
+		Long likesCounter = 0L;
 		if (result != null && result.size() > 0) {
-
 			for(Entity shard : result) {
 				if(shard.hasProperty("LikesCount")){
 					Long shardLikes = (Long) shard.getProperty("LikesCount");
 					likesCounter = Long.sum(shardLikes, likesCounter);
-
 				}
 			}
 		}
 		return likesCounter;
+	}
+
+	/**
+	 * Used as a return value for the API methods
+	 * in the Endpoints Frameworks documentation, entity types are synonymous with Java Beans. The classes that you define for use in your API must
+	 * 		have a public constructor that takes no arguments
+	 * 		control access to private properties using getters and setters. Additionally, each setter must take only one parameter
+	 *
+	 */
+	class ReturnMessage {
+		public String message;
+
+		/**
+		 *
+		 */
+		public ReturnMessage(){
+		}
+
+		/**
+		 *
+		 * @return
+		 */
+		public String getMessage() {
+			return message;
+		}
+
+		/**
+		 *
+		 * @param message
+		 */
+		public void setMessage(String message) {
+			this.message = message;
+		}
 	}
 
 

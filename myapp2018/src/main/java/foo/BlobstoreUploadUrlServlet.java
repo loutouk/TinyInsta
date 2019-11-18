@@ -9,9 +9,22 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
+/**
+ * tool class
+ * @see foo.FormHandlerServlet#doPost(HttpServletRequest, HttpServletResponse)
+ *
+ * @author  LASHERME Loic, FILAUDEAU Eloi, BOURSIER Louis
+ * @version 1.0
+ */
 @WebServlet("/blobstore-upload-url")
 public class BlobstoreUploadUrlServlet extends HttpServlet {
 
+    /**
+     * returns a link to the client form to upload the image for its post
+     * @param request
+     * @param response
+     * @throws IOException
+     */
     @Override
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
         BlobstoreService blobstoreService = BlobstoreServiceFactory.getBlobstoreService();

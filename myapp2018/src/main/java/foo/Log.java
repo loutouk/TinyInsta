@@ -9,15 +9,31 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
 
-
+/**
+ * handles the connection of a user, and its session
+ *
+ * @author  LASHERME Loic, FILAUDEAU Eloi, BOURSIER Louis
+ * @version 1.0
+ */
 @WebServlet("Log")
 public class Log extends HttpServlet {
-
+    /**
+     * @see foo.Log#doPost(HttpServletRequest, HttpServletResponse)
+     * @param req
+     * @param res
+     * @throws IOException
+     */
     @Override
     public void doGet(HttpServletRequest req, HttpServletResponse res) throws IOException {
         doPost(req, res);
     }
 
+    /**
+     * log in the user and creates its session if it exists in the datastore
+     * @param req
+     * @param res
+     * @throws IOException
+     */
     @Override
     public void doPost(HttpServletRequest req, HttpServletResponse res) throws IOException {
 

@@ -13,9 +13,24 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.*;
 
+/**
+ * handles the creation of a post
+ * this is done here and not in the endpoint because the image enctype can not be treated in google app endpoints yet
+ * see the cloud endpoints doc about supported types for path and query parameters
+ * @see foo.PostEndpoint
+ *
+ * @author  LASHERME Loic, FILAUDEAU Eloi, BOURSIER Louis
+ * @version 1.0
+ */
 @WebServlet("/my-form-handler")
 public class FormHandlerServlet extends HttpServlet {
 
+    /**
+     * creates the post entity with the image and its data
+     * @param request
+     * @param response
+     * @throws IOException
+     */
     @Override
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
 
@@ -60,7 +75,10 @@ public class FormHandlerServlet extends HttpServlet {
     }
 
     /**
-     * Returns a URL that points to the uploaded file, or null if the user didn't upload a file.
+     *
+     * @param request
+     * @param formInputElementName
+     * @return a URL that points to the uploaded file, or null if the user didn't upload a file
      */
     private String getUploadedFileUrl(HttpServletRequest request, String formInputElementName){
 

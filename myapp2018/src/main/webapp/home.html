@@ -14,14 +14,7 @@
 
 <body>
 
-
-
-
 <script src="https://unpkg.com/mithril/mithril.js"></script>
-
-
-
-
 
 <script>
 
@@ -78,129 +71,128 @@ function createUserPage(userName) {
 
     m.request({
 
-        method: "GET",
-        url: "http://localhost:8080/_ah/api/myApi/v1/getUserLight/:userName",
-        params: {
-            userName: userName
-        },
+            method: "GET",
+            url: "http://localhost:8080/_ah/api/myApi/v1/getUserLight/:userName",
+            params: {
+                userName: userName
+            },
 
-    })
-    .then(function(resultUser) {
+        })
+        .then(function(resultUser) {
 
-        if(resultUser != null) {
-
-
-            m.request({
-                method: "GET",
-                url: "http://localhost:8080/_ah/api/myApi/v1/getUserPost/:userName",
-                params: {
-                    userName: userName
-                },
-            })
-            .then(function(resultPosts) {
-
-            m.request({
-                method: "GET",
-                url: "http://localhost:8080/_ah/api/myApi/v1/isSubscribed/:userA/:userB",
-                params: {
-                    userA: Session.current.name,
-                    userB: userName
-                },
-            })
-            .then(function(resultSubscribed) {
-
-                var followText = "";
-                var alreadyFollowed = false;
+            if (resultUser != null) {
 
 
-                if (resultSubscribed != null) {
+                m.request({
+                        method: "GET",
+                        url: "http://localhost:8080/_ah/api/myApi/v1/getUserPost/:userName",
+                        params: {
+                            userName: userName
+                        },
+                    })
+                    .then(function(resultPosts) {
 
-                    followText = "Unfollow"
-                    alreadyFollowed = true
+                        m.request({
+                                method: "GET",
+                                url: "http://localhost:8080/_ah/api/myApi/v1/isSubscribed/:userA/:userB",
+                                params: {
+                                    userA: Session.current.name,
+                                    userB: userName
+                                },
+                            })
+                            .then(function(resultSubscribed) {
 
-                } else {
+                                var followText = "";
+                                var alreadyFollowed = false;
 
-                    followText = "Follow"
-                    alreadyFollowed = false
-                }
+                                if (resultSubscribed != null) {
 
-                m.mount(document.body, null) // Clean the body
-                m.render(document.body, m("div", {
-                    class: "user-div"
-                },
-                [
-                    m("div", m(MenuLogo)),
-
-
-                    m("h2", "About " + userName),
-
-
-
-                    m(
-                        "button", {
-                            id: "follow_btn",
-                            class: "follow_btn",
-                            onclick: function() {
-
-
-                                if (alreadyFollowed == false) {
-
-                                    m.request({
-                                        method: "GET",
-                                        url: "http://localhost:8080/_ah/api/myApi/v1/followUser/:follower/:followee",
-                                        params: {
-                                            follower: Session.current.name,
-                                            followee: userName
-                                        },
-                                    })
-                                    .then(function(result) {
-                                        alreadyFollowed = true
-                                        var x = document.getElementById("follow_btn").innerHTML = "Unfollow"
-                                    })
-
+                                    followText = "Unfollow"
+                                    alreadyFollowed = true
 
                                 } else {
 
-                                    m.request({
-                                        method: "GET",
-                                        url: "http://localhost:8080/_ah/api/myApi/v1/unfollowUser/:follower/:followee",
-                                        params: {
-                                            follower: Session.current.name,
-                                            followee: userName
-                                        },
-                                    })
-                                    .then(function(result) {
-                                        alreadyFollowed = false
-                                        var x = document.getElementById("follow_btn").innerHTML = "Follow"
-                                    })
-
+                                    followText = "Follow"
+                                    alreadyFollowed = false
                                 }
 
+                                m.mount(document.body, null) // Clean the body
+                                m.render(document.body, m("div", {
+                                        class: "user-div"
+                                    },
+                                    [
+                                        m("div", m(MenuLogo)),
 
 
-                            },
-                        }, followText
-                    ),
+                                        m("h2", "About " + userName),
 
 
-                    m("hr", ),
-                    m(PostGenerator, {
-                        postItems: resultPosts.items
-                    }),
-                ]))
+
+                                        m(
+                                            "button", {
+                                                id: "follow_btn",
+                                                class: "follow_btn",
+                                                onclick: function() {
 
 
-                })
+                                                    if (alreadyFollowed == false) {
 
-                m.redraw()
-            })
+                                                        m.request({
+                                                                method: "GET",
+                                                                url: "http://localhost:8080/_ah/api/myApi/v1/followUser/:follower/:followee",
+                                                                params: {
+                                                                    follower: Session.current.name,
+                                                                    followee: userName
+                                                                },
+                                                            })
+                                                            .then(function(result) {
+                                                                alreadyFollowed = true
+                                                                var x = document.getElementById("follow_btn").innerHTML = "Unfollow"
+                                                            })
 
 
-        } else {
-            alert("no user found")
-        }
+                                                    } else {
 
-    })
+                                                        m.request({
+                                                                method: "GET",
+                                                                url: "http://localhost:8080/_ah/api/myApi/v1/unfollowUser/:follower/:followee",
+                                                                params: {
+                                                                    follower: Session.current.name,
+                                                                    followee: userName
+                                                                },
+                                                            })
+                                                            .then(function(result) {
+                                                                alreadyFollowed = false
+                                                                var x = document.getElementById("follow_btn").innerHTML = "Follow"
+                                                            })
+
+                                                    }
+
+
+
+                                                },
+                                            }, followText
+                                        ),
+
+
+                                        m("hr", ),
+                                        m(PostGenerator, {
+                                            postItems: resultPosts.items
+                                        }),
+                                    ]))
+
+
+                            })
+
+                        m.redraw()
+                    })
+
+
+            } else {
+                alert("no user found")
+            }
+
+        })
 
 }
 
@@ -239,20 +231,21 @@ function LikeCountGenerator() {
         oninit: function(vnode) {
             postId = vnode.attrs.postIdParam
             m.request({
-                method: "GET",
-                url: "http://localhost:8080/_ah/api/myApi/v1/likesNumber/:postId",
-                params: {
-                    postId: postId.id,
-                },
-            })
-            .then(function(result) {
-                counterText = result
-            })
-        }, view: function(vnode) {
-             return m( "span", {
-                    id: "likeText" + postId.id,
-                    class: "like_count",
-                }, counterText)
+                    method: "GET",
+                    url: "http://localhost:8080/_ah/api/myApi/v1/likesNumber/:postId",
+                    params: {
+                        postId: postId.id,
+                    },
+                })
+                .then(function(result) {
+                    counterText = result
+                })
+        },
+        view: function(vnode) {
+            return m("span", {
+                id: "likeText" + postId.id,
+                class: "like_count",
+            }, counterText)
         }
     }
 }
@@ -272,33 +265,35 @@ function LikeBtnGenerator() {
             alreadyLiked = false
 
             m.request({
-                method: "GET",
-                url: "http://localhost:8080/_ah/api/myApi/v1/isLiked/:postId/:userName",
-                params: {
-                    postId: postId.id,
-                    userName: Session.current.name
-                },
-            })
-            .then(function(resultLiked) {
-                if (resultLiked != null) {
-                    likeText = "Unlike"
-                    alreadyLiked = true
-                } else {
-                    likeText = "Like"
-                    alreadyLiked = false
-                }
+                    method: "GET",
+                    url: "http://localhost:8080/_ah/api/myApi/v1/isLiked/:postId/:userName",
+                    params: {
+                        postId: postId.id,
+                        userName: Session.current.name
+                    },
+                })
+                .then(function(resultLiked) {
 
-            })
+                    if (resultLiked != null) {
+                        likeText = "Unlike"
+                        alreadyLiked = true
+                    } else {
+                        likeText = "Like"
+                        alreadyLiked = false
+                    }
+
+                })
 
 
-        }, view: function(vnode) {
+        },
+        view: function(vnode) {
 
-             return m( "button", {
-                    id: postId.id,
-                    class: "like_btn",
-                    onclick: function() {
-                        if (alreadyLiked == false) {
-                            m.request({
+            return m("button", {
+                id: postId.id,
+                class: "like_btn",
+                onclick: function() {
+                    if (alreadyLiked == false) {
+                        m.request({
                                 method: "POST",
                                 url: "http://localhost:8080/_ah/api/myApi/v1/like/:postId/:parentId/:userName",
                                 params: {
@@ -315,8 +310,8 @@ function LikeBtnGenerator() {
                                 document.getElementById("likeText" + postId.id).innerHTML = editedCount
 
                             })
-                        } else {
-                            m.request({
+                    } else {
+                        m.request({
                                 method: "POST",
                                 url: "http://localhost:8080/_ah/api/myApi/v1/unlike/:postId/:userName",
                                 params: {
@@ -331,9 +326,9 @@ function LikeBtnGenerator() {
                                 var editedCount = parseInt(count) - 1
                                 document.getElementById("likeText" + postId.id).innerHTML = editedCount
                             })
-                        }
                     }
-                }, likeText)
+                }
+            }, likeText)
         }
     }
 }
@@ -352,7 +347,7 @@ var MenuLogo = {
 var PostGenerator = {
     view: function(vnode) {
 
-        if(vnode.attrs.postItems == null) {
+        if (vnode.attrs.postItems == null) {
             return m("div", "No posts found.")
         }
 
@@ -388,9 +383,13 @@ var PostGenerator = {
                                 })
                             ),
 
-                            m(LikeCountGenerator, {postIdParam: item.key}),
+                            m(LikeCountGenerator, {
+                                postIdParam: item.key
+                            }),
                             m("span", " like "),
-                            m(LikeBtnGenerator, {postIdParam: item.key}),
+                            m(LikeBtnGenerator, {
+                                postIdParam: item.key
+                            }),
 
                         ],
                         " The " + item.properties.date
@@ -495,15 +494,6 @@ m.mount(document.body, Main)
 </script>
 
 
-
-
-
-
-
-
-
 </body>
-
-
 
 </html>
