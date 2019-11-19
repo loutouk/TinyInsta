@@ -49,7 +49,7 @@ var Session = {
     listPost: function() {
         return m.request({
                 method: "GET",
-                url: "http://localhost:8080/_ah/api/myApi/v1/getSubscriberPost/:userName",
+                url: "http://localhost:8080/_ah/api/myApi/v1/subscriberposts/:userName",
                 params: {
                     userName: Session.current.name
                 },
@@ -72,7 +72,7 @@ function createUserPage(userName) {
     m.request({
 
             method: "GET",
-            url: "http://localhost:8080/_ah/api/myApi/v1/getUserLight/:userName",
+            url: "http://localhost:8080/_ah/api/myApi/v1/user/:userName",
             params: {
                 userName: userName
             },
@@ -85,7 +85,7 @@ function createUserPage(userName) {
 
                 m.request({
                         method: "GET",
-                        url: "http://localhost:8080/_ah/api/myApi/v1/getUserPost/:userName",
+                        url: "http://localhost:8080/_ah/api/myApi/v1/userposts/:userName",
                         params: {
                             userName: userName
                         },
@@ -94,7 +94,7 @@ function createUserPage(userName) {
 
                         m.request({
                                 method: "GET",
-                                url: "http://localhost:8080/_ah/api/myApi/v1/isSubscribed/:userA/:userB",
+                                url: "http://localhost:8080/_ah/api/myApi/v1/subscriptions/:userA/:userB",
                                 params: {
                                     userA: Session.current.name,
                                     userB: userName
@@ -138,8 +138,8 @@ function createUserPage(userName) {
                                                     if (alreadyFollowed == false) {
 
                                                         m.request({
-                                                                method: "GET",
-                                                                url: "http://localhost:8080/_ah/api/myApi/v1/followUser/:follower/:followee",
+                                                                method: "PUT",
+                                                                url: "http://localhost:8080/_ah/api/myApi/v1/subscriptions/:follower/:followee",
                                                                 params: {
                                                                     follower: Session.current.name,
                                                                     followee: userName
@@ -154,8 +154,8 @@ function createUserPage(userName) {
                                                     } else {
 
                                                         m.request({
-                                                                method: "GET",
-                                                                url: "http://localhost:8080/_ah/api/myApi/v1/unfollowUser/:follower/:followee",
+                                                                method: "DELETE",
+                                                                url: "http://localhost:8080/_ah/api/myApi/v1/subscriptions/:follower/:followee",
                                                                 params: {
                                                                     follower: Session.current.name,
                                                                     followee: userName
@@ -200,7 +200,7 @@ function createHashtagPage(hashtagParam) {
     if (hashtagParam != null && hashtagParam.length > 0) {
         m.request({
                 method: "GET",
-                url: "http://localhost:8080/_ah/api/myApi/v1/getHashtagPost/:hashtag",
+                url: "http://localhost:8080/_ah/api/myApi/v1/hashtagpost/:hashtag",
                 params: {
                     hashtag: hashtagParam
                 },
@@ -232,7 +232,7 @@ function LikeCountGenerator() {
             postId = vnode.attrs.postIdParam
             m.request({
                     method: "GET",
-                    url: "http://localhost:8080/_ah/api/myApi/v1/likesNumber/:postId",
+                    url: "http://localhost:8080/_ah/api/myApi/v1/likesnumber/:postId",
                     params: {
                         postId: postId.id,
                     },
@@ -266,7 +266,7 @@ function LikeBtnGenerator() {
 
             m.request({
                     method: "GET",
-                    url: "http://localhost:8080/_ah/api/myApi/v1/isLiked/:postId/:userName",
+                    url: "http://localhost:8080/_ah/api/myApi/v1/likes/:postId/:userName",
                     params: {
                         postId: postId.id,
                         userName: Session.current.name
@@ -294,8 +294,8 @@ function LikeBtnGenerator() {
                 onclick: function() {
                     if (alreadyLiked == false) {
                         m.request({
-                                method: "POST",
-                                url: "http://localhost:8080/_ah/api/myApi/v1/like/:postId/:parentId/:userName",
+                                method: "PUT",
+                                url: "http://localhost:8080/_ah/api/myApi/v1/likes/:postId/:parentId/:userName",
                                 params: {
                                     postId: postId.id,
                                     parentId: postId.parent.id,
@@ -312,8 +312,8 @@ function LikeBtnGenerator() {
                             })
                     } else {
                         m.request({
-                                method: "POST",
-                                url: "http://localhost:8080/_ah/api/myApi/v1/unlike/:postId/:userName",
+                                method: "DELETE",
+                                url: "http://localhost:8080/_ah/api/myApi/v1/likes/:postId/:userName",
                                 params: {
                                     postId: postId.id,
                                     userName: Session.current.name

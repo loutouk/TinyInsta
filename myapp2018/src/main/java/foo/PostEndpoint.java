@@ -15,6 +15,7 @@ import java.util.*;
 
 /**
  * the endpoint for the application's API. User can access post, subscriptions, users...
+ * JSON fields in the response object are automatically mapped from the properties in the return value by the cloud endpoint
  * the API does not handle the creation of a publication
  * no verification on the identity or rights of the caller: considers all the call legitimate
  * consider implementing OAuth 2.0 to address this problem
@@ -33,7 +34,7 @@ public class PostEndpoint {
 	 * for demonstration mainly. Not supposed to be used after deployment
 	 * @return all the posts
 	 */
-	@ApiMethod(name = "getAllPost", path = "getAllPost", httpMethod = ApiMethod.HttpMethod.GET)
+	@ApiMethod(name = "getposts", path = "posts", httpMethod = ApiMethod.HttpMethod.GET)
 	public List<Entity> getAllPost() {
 		Query q = new Query("Post");
 		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
@@ -47,7 +48,7 @@ public class PostEndpoint {
 	 * @param userName the name of the user
 	 * @return all posts for a given user, considering its subscriptions
 	 */
-	@ApiMethod(name = "getSubscriberPost", path = "getSubscriberPost/{userName}", httpMethod = ApiMethod.HttpMethod.GET)
+	@ApiMethod(name = "getsubscriberposts", path = "subscriberposts/{userName}", httpMethod = ApiMethod.HttpMethod.GET)
 	public List<Entity> getSubscriberPost(@Named("userName") String userName) {
 		// A keys-only query returns just the keys of the result entities instead of the entities themselves, at lower latency and cost than retrieving entire entities
 		Query q = new Query("User").setFilter(new FilterPredicate("subscribers", FilterOperator.EQUAL, userName)).setKeysOnly();
@@ -76,7 +77,7 @@ public class PostEndpoint {
 	 * @param userName the name of the user
 	 * @return all posts that belong to the specified user
 	 */
-	@ApiMethod(name = "getUserPost", path = "getUserPost/{userName}", httpMethod = ApiMethod.HttpMethod.GET)
+	@ApiMethod(name = "getuserposts", path = "userposts/{userName}", httpMethod = ApiMethod.HttpMethod.GET)
 	public List<Entity> getUserPost(@Named("userName") String userName) {
 		Query q = new Query("Post")
 				.setFilter(new FilterPredicate("name", FilterOperator.EQUAL, userName));
@@ -91,7 +92,7 @@ public class PostEndpoint {
 	 * @param hashtag
 	 * @return all posts that contain the specified hastag
 	 */
-	@ApiMethod(name = "getHashtagPost", path = "getHashtagPost/{hashtag}", httpMethod = ApiMethod.HttpMethod.GET)
+	@ApiMethod(name = "gethashtagpost", path = "hashtagpost/{hashtag}", httpMethod = ApiMethod.HttpMethod.GET)
 	public List<Entity> getHashtagPost(@Named("hashtag") String hashtag) {
 		Query q = new Query("Post")
 				.setFilter(new FilterPredicate("hashtag", FilterOperator.EQUAL, hashtag));
@@ -106,7 +107,7 @@ public class PostEndpoint {
 	 * @param name the user name
 	 * @return the user entity
 	 */
-	@ApiMethod(name = "addUser", path = "addUser", httpMethod = ApiMethod.HttpMethod.POST)
+	@ApiMethod(name = "postuser", path = "user", httpMethod = ApiMethod.HttpMethod.POST)
 	public Entity addUser(@Named("name") String name) {
 
 		int retries = 0;
@@ -167,7 +168,7 @@ public class PostEndpoint {
 	 * @param name
 	 * @return the name property of the user
 	 */
-	@ApiMethod(name = "getUserLight", path = "getUserLight/{name}", httpMethod = ApiMethod.HttpMethod.GET)
+	@ApiMethod(name = "getuser", path = "user/{name}", httpMethod = ApiMethod.HttpMethod.GET)
 	public Object getUserLight(@Named("name") String name) {
 		Query q = new Query("User")
 				.setFilter(new FilterPredicate("name", FilterOperator.EQUAL, name));
@@ -179,12 +180,12 @@ public class PostEndpoint {
 	}
 
 	/**
-	 *
+	 * Not used in deployment, because returning the whole lists of subscribers and followers is not scalable
 	 * @param name
 	 * @return every properties fom the user
 	 */
-	@ApiMethod(name = "getUser", path = "getUser/{name}", httpMethod = ApiMethod.HttpMethod.GET)
-	public Entity getUser(@Named("name") String name) {
+	@ApiMethod(name = "getfulluser", path = "fulluser/{name}", httpMethod = ApiMethod.HttpMethod.GET)
+	public Entity getFullUser(@Named("name") String name) {
 		Query q = new Query("User")
 				.setFilter(new FilterPredicate("name", FilterOperator.EQUAL, name));
 		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
@@ -199,7 +200,7 @@ public class PostEndpoint {
 	 * @param name
 	 * @return the list of users a user is subscribed to
 	 */
-	@ApiMethod(name = "getUserSubscriptions", path = "getUserSubscriptions/{name}", httpMethod = ApiMethod.HttpMethod.GET)
+	@ApiMethod(name = "getusersubscriptions", path = "usersubscriptions/{name}", httpMethod = ApiMethod.HttpMethod.GET)
 	public List<Entity> getUserSubscriptions(@Named("name") String name) {
 		Query q = new Query("User")
 
@@ -219,7 +220,7 @@ public class PostEndpoint {
 	 * @param userB
 	 * @return null if he does not follow, an object message if he follows
 	 */
-	@ApiMethod(name = "isSubscribed", path = "isSubscribed/{userA}/{userB}", httpMethod = ApiMethod.HttpMethod.GET)
+	@ApiMethod(name = "issubscribed", path = "subscriptions/{userA}/{userB}", httpMethod = ApiMethod.HttpMethod.GET)
 	public ReturnMessage isSubscribed(@Named("userA") String userA, @Named("userB") String userB) {
 		Query q = new Query("User")
 				.setFilter(new FilterPredicate("name", FilterOperator.EQUAL, userA));
@@ -246,12 +247,13 @@ public class PostEndpoint {
 
 	/**
 	 * makes a follower follow a followee
+	 * PUT method is used because the operation is idempotent (if we consider the operation call legitimate)
 	 * maintains the subscribers and followers list in both followwee and follower entity to optimize access later on
 	 * @param follower
 	 * @param followee
 	 * @return object message if the operation is successful, null otherwise
 	 */
-	@ApiMethod(name = "followUser", path = "followUser/{follower}/{followee}", httpMethod = ApiMethod.HttpMethod.GET)
+	@ApiMethod(name = "followUser", path = "subscriptions/{follower}/{followee}", httpMethod = ApiMethod.HttpMethod.PUT)
 	public ReturnMessage followUser(@Named("follower") String follower, @Named("followee") String followee) {
 
 		int retries = 0;
@@ -348,7 +350,7 @@ public class PostEndpoint {
 	 * @param followee
 	 * @return object message if the operation is successful, null otherwise
 	 */
-	@ApiMethod(name = "unfollowUser", path = "unfollowUser/{follower}/{followee}", httpMethod = ApiMethod.HttpMethod.GET)
+	@ApiMethod(name = "unfollowUser", path = "subscriptions/{follower}/{followee}", httpMethod = ApiMethod.HttpMethod.DELETE)
 	public ReturnMessage unfollowUser(@Named("follower") String follower, @Named("followee") String followee) {
 
 		int retries = 0;
@@ -438,6 +440,7 @@ public class PostEndpoint {
 
 	/**
 	 * like a post
+	 * PUT method is used because the operation is idempotent (if we consider the operation call legitimate)
 	 * warning: no lock on the referenced post to like (might be deleted meanwhile for example)
 	 * use sharded counter (CRDT) to address the contention problem
 	 * we can only expect to update any single entity or entity group about five times a second
@@ -448,7 +451,7 @@ public class PostEndpoint {
 	 * @param userName the name of the user
 	 * @return
 	 */
-	@ApiMethod(name = "like", path = "like/{postId}/{parentId}/{userName}", httpMethod = ApiMethod.HttpMethod.POST)
+	@ApiMethod(name = "like", path = "likes/{postId}/{parentId}/{userName}", httpMethod = ApiMethod.HttpMethod.PUT)
 	public ReturnMessage like(@Named("postId") String postId, @Named("parentId") String parentId, @Named("userName") String userName) {
 
 		int retries = 0;
@@ -522,7 +525,7 @@ public class PostEndpoint {
 	 * @param userName the name of the user
 	 * @return
 	 */
-	@ApiMethod(name = "unlike", path = "unlike/{postId}/{userName}", httpMethod = ApiMethod.HttpMethod.POST)
+	@ApiMethod(name = "unlike", path = "likes/{postId}/{userName}", httpMethod = ApiMethod.HttpMethod.DELETE)
 	public ReturnMessage unlike(@Named("postId") String postId, @Named("userName") String userName) {
 
 		int retries = 0;
@@ -590,7 +593,7 @@ public class PostEndpoint {
 	 * @param userName the name of the user
 	 * @return null if the post is liked, an object otherwise
 	 */
-	@ApiMethod(name = "isLiked", path = "isLiked/{postId}/{userName}", httpMethod = ApiMethod.HttpMethod.GET)
+	@ApiMethod(name = "isLiked", path = "likes/{postId}/{userName}", httpMethod = ApiMethod.HttpMethod.GET)
 	public ReturnMessage isLiked(@Named("postId") String postId, @Named("userName") String userName) {
 		Query q = new Query("LikeShard")
 				.setFilter(new FilterPredicate("UserAndPostid", FilterOperator.EQUAL, userName+postId));
@@ -606,7 +609,7 @@ public class PostEndpoint {
 	 * @param postId the id field for the post datastore object
 	 * @return the number of likes the post has
 	 */
-	@ApiMethod(name = "likesNumber", path = "likesNumber/{postId}/", httpMethod = ApiMethod.HttpMethod.GET)
+	@ApiMethod(name = "likesNumber", path = "likesnumber/{postId}/", httpMethod = ApiMethod.HttpMethod.GET)
 	public Object likesNumber(@Named("postId") String postId) {
 		Query q = new Query("LikeShard")
 				.setFilter(new FilterPredicate("PostId", FilterOperator.EQUAL, postId));
@@ -624,39 +627,5 @@ public class PostEndpoint {
 		}
 		return likesCounter;
 	}
-
-	/**
-	 * Used as a return value for the API methods
-	 * in the Endpoints Frameworks documentation, entity types are synonymous with Java Beans. The classes that you define for use in your API must
-	 * 		have a public constructor that takes no arguments
-	 * 		control access to private properties using getters and setters. Additionally, each setter must take only one parameter
-	 *
-	 */
-	class ReturnMessage {
-		public String message;
-
-		/**
-		 *
-		 */
-		public ReturnMessage(){
-		}
-
-		/**
-		 *
-		 * @return
-		 */
-		public String getMessage() {
-			return message;
-		}
-
-		/**
-		 *
-		 * @param message
-		 */
-		public void setMessage(String message) {
-			this.message = message;
-		}
-	}
-
 
 }

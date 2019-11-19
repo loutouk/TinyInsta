@@ -20,7 +20,7 @@ var AddUser = {
     add: function() {
         return m.request({
                 method: "POST",
-                url: "http://localhost:8080/_ah/api/myApi/v1/addUser",
+                url: "http://localhost:8080/_ah/api/myApi/v1/user",
                 body: {
                     name: AddUser.current.name
                 },
