@@ -117,74 +117,80 @@ function createUserPage(userName) {
                                 }
 
                                 m.mount(document.body, null) // Clean the body
-                                m.render(document.body, m("div", {
-                                        class: "user-div"
-                                    },
-                                    [
-                                        m("div", m(MenuLogo)),
+
+                                var UserPage = {
+                                    view: function() {
+                                        return m("div", {
+                                                class: "user-div"
+                                            },
+                                            [
+                                                m("div", m(MenuLogo)),
 
 
-                                        m("h2", "About " + userName),
-
-
-
-                                        m(
-                                            "button", {
-                                                id: "follow_btn",
-                                                class: "follow_btn",
-                                                onclick: function() {
-
-
-                                                    if (alreadyFollowed == false) {
-
-                                                        m.request({
-                                                                method: "PUT",
-                                                                url: "http://localhost:8080/_ah/api/myApi/v1/subscriptions/:follower/:followee",
-                                                                params: {
-                                                                    follower: Session.current.name,
-                                                                    followee: userName
-                                                                },
-                                                            })
-                                                            .then(function(result) {
-                                                                alreadyFollowed = true
-                                                                var x = document.getElementById("follow_btn").innerHTML = "Unfollow"
-                                                            })
-
-
-                                                    } else {
-
-                                                        m.request({
-                                                                method: "DELETE",
-                                                                url: "http://localhost:8080/_ah/api/myApi/v1/subscriptions/:follower/:followee",
-                                                                params: {
-                                                                    follower: Session.current.name,
-                                                                    followee: userName
-                                                                },
-                                                            })
-                                                            .then(function(result) {
-                                                                alreadyFollowed = false
-                                                                var x = document.getElementById("follow_btn").innerHTML = "Follow"
-                                                            })
-
-                                                    }
+                                                m("h2", "About " + userName),
 
 
 
-                                                },
-                                            }, followText
-                                        ),
+                                                m(
+                                                    "button", {
+                                                        id: "follow_btn",
+                                                        class: "follow_btn",
+                                                        onclick: function() {
 
 
-                                        m("hr", ),
-                                        m(PostGenerator, {
-                                            postItems: resultPosts.items
-                                        }),
-                                    ]))
+                                                            if (alreadyFollowed == false) {
 
+                                                                m.request({
+                                                                        method: "PUT",
+                                                                        url: "http://localhost:8080/_ah/api/myApi/v1/subscriptions/:follower/:followee",
+                                                                        params: {
+                                                                            follower: Session.current.name,
+                                                                            followee: userName
+                                                                        },
+                                                                    })
+                                                                    .then(function(result) {
+                                                                        alreadyFollowed = true
+                                                                        var x = document.getElementById("follow_btn").innerHTML = "Unfollow"
+                                                                    })
+
+
+                                                            } else {
+
+                                                                m.request({
+                                                                        method: "DELETE",
+                                                                        url: "http://localhost:8080/_ah/api/myApi/v1/subscriptions/:follower/:followee",
+                                                                        params: {
+                                                                            follower: Session.current.name,
+                                                                            followee: userName
+                                                                        },
+                                                                    })
+                                                                    .then(function(result) {
+                                                                        alreadyFollowed = false
+                                                                        var x = document.getElementById("follow_btn").innerHTML = "Follow"
+                                                                    })
+
+                                                            }
+
+
+
+                                                        },
+                                                    }, followText
+                                                ),
+
+
+                                                m("hr", ),
+                                                m(PostGenerator, {
+                                                    postItems: resultPosts.items
+                                                }),
+                                            ]
+                                        )
+                                    }
+                                }
+
+                                m.mount(document.body, UserPage)
 
                             })
 
-                        m.redraw()
                     })
 
 
@@ -207,18 +213,25 @@ function createHashtagPage(hashtagParam) {
             })
             .then(function(result) {
                 m.mount(document.body, null) // Clean the body
-                m.render(document.body, m("div", {
-                        class: "hashtagposts-div"
-                    },
-                    [
-                        m("div", m(MenuLogo)),
-                        m("h2", "All posts with #" + hashtagParam),
-                        m("hr", ),
-                        m(PostGenerator, {
-                            postItems: result.items
-                        }),
-                    ]))
-                m.redraw()
+
+                var HashtagPage = {
+                    view: function() {
+                        return m("div", {
+                                class: "hashtagposts-div"
+                            },
+                            [
+                                m("div", m(MenuLogo)),
+                                m("h2", "All posts with #" + hashtagParam),
+                                m("hr", ),
+                                m(PostGenerator, {
+                                    postItems: result.items
+                                }),
+                        ])
+                    }
+                }
+
+
+                m.mount(document.body, HashtagPage)
 
             })
     }
@@ -265,6 +278,7 @@ function LikeBtnGenerator() {
             alreadyLiked = false
 
             m.request({
+
                     method: "GET",
                     url: "http://localhost:8080/_ah/api/myApi/v1/likes/:postId/:userName",
                     params: {
@@ -283,7 +297,6 @@ function LikeBtnGenerator() {
                     }
 
                 })
-
 
         },
         view: function(vnode) {
@@ -329,7 +342,8 @@ function LikeBtnGenerator() {
                     }
                 }
             }, likeText)
-        }
+        },
+
     }
 }
 
