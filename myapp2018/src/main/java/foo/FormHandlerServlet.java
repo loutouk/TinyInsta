@@ -26,7 +26,8 @@ import java.util.*;
 public class FormHandlerServlet extends HttpServlet {
 
     /**
-     * creates the post entity with the image and its data
+     * Creates the post entity with the image and its data
+     *
      * @param request
      * @param response
      * @throws IOException
@@ -57,8 +58,7 @@ public class FormHandlerServlet extends HttpServlet {
             }else{
                 // There should be only one element in the list because of name uniqueness
                 Entity followeeEntity = result.get(0);
-
-                // Create Post entity with its User as parent
+                // Creates Post entity with its User as parent, and let the Appengine generate the key
                 Entity e = new Entity("Post", followeeEntity.getKey());
                 e.setProperty("name", name);
                 // Regex splits the string on a delimiter defined as: zero or more whitespace, a literal comma, zero or more whitespace
@@ -66,6 +66,8 @@ public class FormHandlerServlet extends HttpServlet {
                 e.setProperty("hashtag", hashtagList);
                 e.setProperty("image", imageUrl);
                 e.setProperty("date", new Date());
+                // Use - symbol to get newer Post first
+                e.setProperty("timestamp", -System.currentTimeMillis()/1000);
                 datastore.put(e);
             }
 
