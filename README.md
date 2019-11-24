@@ -5,11 +5,11 @@ TinyInsta is an instagram like toy app to get familiar with Google Appengine and
 
 
 ## Load Analysis
-Post posts action is constant and decoupled from the number of followzers
-![alt text](https://github.com/loutouk/TinyInsta/tree/blob/myapp2018/data/post.png)
+Post posts action is constant and decoupled from the number of followers
+![alt text](https://github.com/loutouk/TinyInsta/blob/master/myapp2018/data/post.png)
 
 Get posts action is linear with the number of items we want to access
-![alt text](https://github.com/loutouk/TinyInsta/tree/blob/myapp2018/data/get.png)
+![alt text](https://github.com/loutouk/TinyInsta/blob/master/myapp2018/data/get.png)
 
 ## DataStore Kinds
 
