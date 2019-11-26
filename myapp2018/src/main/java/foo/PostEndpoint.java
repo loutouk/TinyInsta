@@ -68,19 +68,30 @@ public class PostEndpoint {
 			return null;
 		}
 
+		// Alternative choice
+		// Use TreeSet to sort on insertion (on timestamp field) in O(log(n))
+		// Faster than sorting a list in O(nlog(n)) with Collections.sort
+		// Not mandatory because the list returned is small (maybe this approach is even slower for few Post in the list)
+		// Load tests and profiling show no difference in time to fetch from 10 to 10000 posts
+
 		ArrayList<Entity> posts = new ArrayList<>();
+		//TreeSet<Post> posts = new TreeSet<>();
 
 		for(Entity userId : userIds){
 			q = new Query("Post").setAncestor(userId.getKey());
 			pq = datastore.prepare(q);
 			List<Entity> userPosts = pq.asList(FetchOptions.Builder.withDefaults());
+			/*for(Entity postEntity : userPosts){
+				Post postInstance = new Post();
+				postInstance.setName((String) postEntity.getProperty("name"));
+				postInstance.setTimestamp((Long) postEntity.getProperty("timestamp"));
+				postInstance.setImage((String) postEntity.getProperty("image"));
+				postInstance.setHashtag((ArrayList<String>) postEntity.getProperty("hashtag"));
+				postInstance.setDate((Date) postEntity.getProperty("date"));
+				posts.add(postInstance);
+			}*/
 			posts.addAll(userPosts);
 		}
-
-		//TODO
-		// Use TreeSet to sort on insertion (on timestamp field) in O(log(n))
-		// Faster than sorting a list in O(nlog(n)) with Collections.sort
-		// Not mandatory because the list returned is small (maybe this approach is even slower for few Post in the list)
 
 		Collections.sort(posts, (o1, o2) -> (int) (((Long) o1.getProperty("timestamp")) - ((Long) o2.getProperty("timestamp"))));
 
@@ -128,7 +139,7 @@ public class PostEndpoint {
 		int retries = 0;
 		int delay = 1; // seconds before first retry
 
-		while (true) {
+		while (true && retries<=TRANSACTION_RETRIES) {
 
 			DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 			// Requires transaction in case a user is created with the same name between the verifying operation and the creation
@@ -176,6 +187,7 @@ public class PostEndpoint {
 
 		}
 
+		return null;
 	}
 
 	/**
@@ -275,7 +287,7 @@ public class PostEndpoint {
 		int retries = 0;
 		int delay = 1; // Seconds before first retry
 
-		while (true) {
+		while (true && retries<=TRANSACTION_RETRIES) {
 
 			DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 			// Requires a transaction in case the userA already un/follow userB meanwhile
@@ -358,6 +370,9 @@ public class PostEndpoint {
 			delay *= 2; // Easy exponential backoff
 		}
 
+		ReturnMessage msg = new ReturnMessage();
+		msg.setMessage("notok");
+		return msg;
 	}
 
 	/**
@@ -372,7 +387,7 @@ public class PostEndpoint {
 		int retries = 0;
 		int delay = 1; // Seconds before first retry
 
-		while (true) {
+		while (true && retries<=TRANSACTION_RETRIES) {
 
 			DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 			// Requires a transaction in case the userA already un/follow userB meanwhile
@@ -452,6 +467,9 @@ public class PostEndpoint {
 			delay *= 2; // Easy exponential backoff
 		}
 
+		ReturnMessage msg = new ReturnMessage();
+		msg.setMessage("notok");
+		return msg;
 	}
 
 	/**
@@ -473,7 +491,7 @@ public class PostEndpoint {
 		int retries = 0;
 		int delay = 1; // Seconds before first retry
 
-		while (true) {
+		while (true && retries<=TRANSACTION_RETRIES) {
 
 			DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 			// Requires a transaction because the counter may be updated by another instance meanwhile
@@ -533,6 +551,9 @@ public class PostEndpoint {
 			delay *= 2; // Easy exponential backoff
 		}
 
+		ReturnMessage msg = new ReturnMessage();
+		msg.setMessage("notok");
+		return msg;
 	}
 
 	/**
@@ -547,7 +568,7 @@ public class PostEndpoint {
 		int retries = 0;
 		int delay = 1; // Seconds before first retry
 
-		while (true) {
+		while (true && retries<=TRANSACTION_RETRIES) {
 
 			DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 			Transaction txn = datastore.beginTransaction();
@@ -601,6 +622,10 @@ public class PostEndpoint {
 			}
 			delay *= 2; // Easy exponential backoff
 		}
+
+		ReturnMessage msg = new ReturnMessage();
+		msg.setMessage("notok");
+		return msg;
 	}
 
 	/**
