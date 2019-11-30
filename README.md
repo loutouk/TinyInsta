@@ -1,4 +1,4 @@
-# webandcloud
+# WebAndCloud
 
 ## About
 TinyInsta is an Instagram like toy app to get familiar with Google Appengine and Google Datastore.
