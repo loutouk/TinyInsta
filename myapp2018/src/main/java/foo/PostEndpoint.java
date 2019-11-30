@@ -660,7 +660,7 @@ public class PostEndpoint {
 		Long likesCounter = 0L;
 		if (result != null && result.size() > 0) {
 			for(Entity shard : result) {
-				if(shard.hasProperty("Li                                                            kesCount")){
+				if(shard.hasProperty("LikesCount")){
 					Long shardLikes = (Long) shard.getProperty("LikesCount");
 					likesCounter = Long.sum(shardLikes, likesCounter);
 				}
