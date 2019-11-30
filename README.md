@@ -16,11 +16,11 @@ The load analysis on the "like" button is hard to do because we would need a lot
 
 ## DataStore Kinds
 ### User
-![alt text](https://github.com/loutouk/TinyInsta/blob/master/myapp2018/data/user.png)
+![alt text](https://github.com/loutouk/TinyInsta/blob/master/myapp2018/data/user.PNG)
 ### Post
-![alt text](https://github.com/loutouk/TinyInsta/blob/master/myapp2018/data/posts.png)
+![alt text](https://github.com/loutouk/TinyInsta/blob/master/myapp2018/data/posts.PNG)
 ### LikeShard
-![alt text](https://github.com/loutouk/TinyInsta/blob/master/myapp2018/data/likeshard.png)
+![alt text](https://github.com/loutouk/TinyInsta/blob/master/myapp2018/data/likeshard.PNG)
 
 
 ## API Explorer
