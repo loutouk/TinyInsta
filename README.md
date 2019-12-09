@@ -30,10 +30,21 @@ The load analysis on the "like" button is hard to do because we would need a lot
 
 ## DataStore Kinds
 ### User
+
+Data denormalization on subscribers and followers to increase performance. No need to compute the followers from the subscribers or vice versa. We directly access the information we need.
+
 ![alt text](https://github.com/loutouk/TinyInsta/blob/master/myapp2018/data/user.PNG)
+
 ### Post
+
 ![alt text](https://github.com/loutouk/TinyInsta/blob/master/myapp2018/data/posts.PNG)
+
 ### LikeShard
+
+Sharded counter to automatically absorb the load. 
+A numeric counter is used to avoid the performance cost of counting the number of likes with a count() operation.
+Data denormalization is used on the property UserAndPostid. It is a home made composite index to quickly link a post and its user's like. It saves us from having a combinatorial explosion (userIds * postIds) because an element is created only when needed (when a like is performed).
+
 ![alt text](https://github.com/loutouk/TinyInsta/blob/master/myapp2018/data/likeshard.PNG)
 
 
@@ -41,8 +52,9 @@ The load analysis on the "like" button is hard to do because we would need a lot
 [Explore the API](https://mystical-app-220509.appspot.com/_ah/api/explorer)
 
 ## Install and Run
-* [Java Appengine Quickstart](https://cloud.google.com/appengine/docs/standard/java/quickstart)
+* [See Java Appengine Quickstart](https://cloud.google.com/appengine/docs/standard/java/quickstart)
 * git clone https://github.com/loutouk/TinyInsta.git
-* cd webandcloud/myapp2018/
-* mvn appengine:deploy
-* gcloud app browse
+* cd TinyInsta/myapp2018/
+* mvn appengine:deploy (deploy on Google's servers)
+* mvn appengine:run (deploy locally)
+* gcloud app browse (or localhost if local deployment)
