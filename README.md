@@ -1,8 +1,17 @@
 # WebAndCloud
 
 ## About
-TinyInsta is an Instagram like toy app to get familiar with Google Appengine and Google Datastore.
+TinyInsta is a scalable Instagram like toy app to get familiar with Google Appengine and Google Datastore.
 
+## Preview
+
+### User page
+
+![alt text](https://github.com/loutouk/TinyInsta/blob/master/myapp2018/data/previewA.png)
+
+### Hashtag page
+
+![alt text](https://github.com/loutouk/TinyInsta/blob/master/myapp2018/data/previewB.png)
 
 ## Load Analysis
 Post some Post action is logarithmic with the number of item to post because decoupled from the number of followers
