@@ -3,18 +3,13 @@
 <head>
 	<meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
 	<title>TinyInsta</title>
-	<!-- <style>
-	h1 h2 { color: rgb(34, 147, 245); margin: 15px; }
-	body { font-family: "Verdana", "Times New Roman", Times, serif; }
-	hr { width:100%; height:1px; background: #fff; margin-bottom: 8px; }
-	</style> -->
-	<!-- <link rel="stylesheet" href="css/main.css"> -->
 	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css?family=Cookie&display=swap" rel="stylesheet">
     <link type="text/css" rel="stylesheet" href="css/normalize.css">
     <link type="text/css" rel="stylesheet" href="css/materialize.css">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 </head>
-<body>
+<body class="blue-grey lighten-5">
 
 <script src="https://unpkg.com/mithril/mithril.js"></script>
 
@@ -61,7 +56,8 @@ var Main = {
 			m("div", {class:"col s4 m4 l4"}, [
 
 	            m("h1", {
-	                class: "title center-align"
+	                class: "title center-align",
+					style: 'font-family: "Cookie";'
 	            }, "TinyInsta"),
 
 	            m("form", {
@@ -71,7 +67,7 @@ var Main = {
 	                },
 	                [
 	                    m("input.input[type=text][placeholder=Username][name=name]"),
-	                    m("button.btn[type=submit]", {class:"waves-effect waves-light", name:"action"}, "Log in"),
+	                    m("button.btn[type=submit]", {class:"waves-effect waves-light white black-text", name:"action"}, "Log in"),
 	                ]),
 
 	            m("form", {
@@ -87,7 +83,7 @@ var Main = {
 	                            AddUser.current.name = e.target.value
 	                        },
 	                    }),
-	                    m("button.btn[type=submit]", {class:"waves-effect waves-light", name:"action"}, "Create User"),
+	                    m("button.btn[type=submit]", {class:"waves-effect waves-light white black-text", name:"action"}, "Create User"),
 	                ]),
 
 	        ]),
