@@ -37,7 +37,7 @@ public class PostEndpoint {
 	@Deprecated
 	@ApiMethod(name = "getposts", path = "posts", httpMethod = ApiMethod.HttpMethod.GET)
 	public List<Entity> getAllPost() {
-		Query q = new Query("Post").addSort("date");
+		Query q = new Query("Post");
 		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 		PreparedQuery pq = datastore.prepare(q);
 		List<Entity> result = pq.asList(FetchOptions.Builder.withDefaults());
@@ -106,7 +106,7 @@ public class PostEndpoint {
 	@ApiMethod(name = "getuserposts", path = "userposts/{userName}", httpMethod = ApiMethod.HttpMethod.GET)
 	public List<Entity> getUserPost(@Named("userName") String userName) {
 		Query q = new Query("Post")
-				.setFilter(new FilterPredicate("name", FilterOperator.EQUAL, userName)).addSort("date", Query.SortDirection.DESCENDING);
+				.setFilter(new FilterPredicate("name", FilterOperator.EQUAL, userName));
 		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 		PreparedQuery pq = datastore.prepare(q);
 		List<Entity> result = pq.asList(FetchOptions.Builder.withDefaults());
@@ -121,7 +121,7 @@ public class PostEndpoint {
 	@ApiMethod(name = "gethashtagpost", path = "hashtagpost/{hashtag}", httpMethod = ApiMethod.HttpMethod.GET)
 	public List<Entity> getHashtagPost(@Named("hashtag") String hashtag) {
 		Query q = new Query("Post")
-				.setFilter(new FilterPredicate("hashtag", FilterOperator.EQUAL, hashtag)).addSort("date", Query.SortDirection.DESCENDING);
+				.setFilter(new FilterPredicate("hashtag", FilterOperator.EQUAL, hashtag));
 		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 		PreparedQuery pq = datastore.prepare(q);
 		List<Entity> result = pq.asList(FetchOptions.Builder.withDefaults());
