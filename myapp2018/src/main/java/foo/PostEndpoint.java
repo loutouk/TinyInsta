@@ -34,9 +34,10 @@ public class PostEndpoint {
 	 * for demonstration mainly. Not supposed to be used after deployment
 	 * @return all the posts
 	 */
+	@Deprecated
 	@ApiMethod(name = "getposts", path = "posts", httpMethod = ApiMethod.HttpMethod.GET)
 	public List<Entity> getAllPost() {
-		Query q = new Query("Post");
+		Query q = new Query("Post").addSort("date");
 		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 		PreparedQuery pq = datastore.prepare(q);
 		List<Entity> result = pq.asList(FetchOptions.Builder.withDefaults());
@@ -45,11 +46,17 @@ public class PostEndpoint {
 
 	/**
 	 *
+	 * sorting on the date needs to be done manually on this side because the result is a set of query
+	 * so it can not be sorted on an entity property (the timestamp date) with the appengine Query sorting method
+	 * not using a parent child relationship would allow for a single query and an easy sort on the timestamp property
+	 * but because we can consider that a user does not need to load thousands of its posts instantly, this is not a problem
+	 * and this architecture makes easier the process of mapping users to their subscriptions posts
+	 *
 	 * @param userName the name of the user
 	 * @return all posts for a given user, considering its subscriptions
 	 */
 	@ApiMethod(name = "getsubscriberposts", path = "subscriberposts/{userName}", httpMethod = ApiMethod.HttpMethod.GET)
-	public List<Entity> getSubscriberPost(@Named("userName") String userName) {
+	public ArrayList<Entity> getSubscriberPost(@Named("userName") String userName) {
 		// A keys-only query returns just the keys of the result entities instead of the entities themselves, at lower latency and cost than retrieving entire entities
 		Query q = new Query("User").setFilter(new FilterPredicate("subscribers", FilterOperator.EQUAL, userName)).setKeysOnly();
 		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
@@ -61,14 +68,33 @@ public class PostEndpoint {
 			return null;
 		}
 
+		// Alternative choice
+		// Use TreeSet to sort on insertion (on timestamp field) in O(log(n))
+		// Faster than sorting a list in O(nlog(n)) with Collections.sort
+		// Not mandatory because the list returned is small (maybe this approach is even slower for few Post in the list)
+		// Load tests and profiling show no difference in time to fetch from 10 to 10000 posts
+
 		ArrayList<Entity> posts = new ArrayList<>();
-		// Use the fact that User are Post's parents: retrieves all posts that got the followee User key as parent
+		//TreeSet<Post> posts = new TreeSet<>();
+
 		for(Entity userId : userIds){
 			q = new Query("Post").setAncestor(userId.getKey());
 			pq = datastore.prepare(q);
 			List<Entity> userPosts = pq.asList(FetchOptions.Builder.withDefaults());
+			/*for(Entity postEntity : userPosts){
+				Post postInstance = new Post();
+				postInstance.setName((String) postEntity.getProperty("name"));
+				postInstance.setTimestamp((Long) postEntity.getProperty("timestamp"));
+				postInstance.setImage((String) postEntity.getProperty("image"));
+				postInstance.setHashtag((ArrayList<String>) postEntity.getProperty("hashtag"));
+				postInstance.setDate((Date) postEntity.getProperty("date"));
+				posts.add(postInstance);
+			}*/
 			posts.addAll(userPosts);
 		}
+
+		Collections.sort(posts, (o1, o2) -> (int) (((Long) o1.getProperty("timestamp")) - ((Long) o2.getProperty("timestamp"))));
+
 		return posts;
 	}
 
@@ -80,7 +106,7 @@ public class PostEndpoint {
 	@ApiMethod(name = "getuserposts", path = "userposts/{userName}", httpMethod = ApiMethod.HttpMethod.GET)
 	public List<Entity> getUserPost(@Named("userName") String userName) {
 		Query q = new Query("Post")
-				.setFilter(new FilterPredicate("name", FilterOperator.EQUAL, userName));
+				.setFilter(new FilterPredicate("name", FilterOperator.EQUAL, userName)).addSort("date", Query.SortDirection.DESCENDING);
 		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 		PreparedQuery pq = datastore.prepare(q);
 		List<Entity> result = pq.asList(FetchOptions.Builder.withDefaults());
@@ -95,7 +121,7 @@ public class PostEndpoint {
 	@ApiMethod(name = "gethashtagpost", path = "hashtagpost/{hashtag}", httpMethod = ApiMethod.HttpMethod.GET)
 	public List<Entity> getHashtagPost(@Named("hashtag") String hashtag) {
 		Query q = new Query("Post")
-				.setFilter(new FilterPredicate("hashtag", FilterOperator.EQUAL, hashtag));
+				.setFilter(new FilterPredicate("hashtag", FilterOperator.EQUAL, hashtag)).addSort("date", Query.SortDirection.DESCENDING);
 		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 		PreparedQuery pq = datastore.prepare(q);
 		List<Entity> result = pq.asList(FetchOptions.Builder.withDefaults());
@@ -113,7 +139,7 @@ public class PostEndpoint {
 		int retries = 0;
 		int delay = 1; // seconds before first retry
 
-		while (true) {
+		while (true && retries<=TRANSACTION_RETRIES) {
 
 			DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 			// Requires transaction in case a user is created with the same name between the verifying operation and the creation
@@ -161,6 +187,7 @@ public class PostEndpoint {
 
 		}
 
+		return null;
 	}
 
 	/**
@@ -184,6 +211,7 @@ public class PostEndpoint {
 	 * @param name
 	 * @return every properties fom the user
 	 */
+	@Deprecated
 	@ApiMethod(name = "getfulluser", path = "fulluser/{name}", httpMethod = ApiMethod.HttpMethod.GET)
 	public Entity getFullUser(@Named("name") String name) {
 		Query q = new Query("User")
@@ -259,7 +287,7 @@ public class PostEndpoint {
 		int retries = 0;
 		int delay = 1; // Seconds before first retry
 
-		while (true) {
+		while (true && retries<=TRANSACTION_RETRIES) {
 
 			DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 			// Requires a transaction in case the userA already un/follow userB meanwhile
@@ -342,6 +370,9 @@ public class PostEndpoint {
 			delay *= 2; // Easy exponential backoff
 		}
 
+		ReturnMessage msg = new ReturnMessage();
+		msg.setMessage("notok");
+		return msg;
 	}
 
 	/**
@@ -356,7 +387,7 @@ public class PostEndpoint {
 		int retries = 0;
 		int delay = 1; // Seconds before first retry
 
-		while (true) {
+		while (true && retries<=TRANSACTION_RETRIES) {
 
 			DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 			// Requires a transaction in case the userA already un/follow userB meanwhile
@@ -436,6 +467,9 @@ public class PostEndpoint {
 			delay *= 2; // Easy exponential backoff
 		}
 
+		ReturnMessage msg = new ReturnMessage();
+		msg.setMessage("notok");
+		return msg;
 	}
 
 	/**
@@ -457,7 +491,7 @@ public class PostEndpoint {
 		int retries = 0;
 		int delay = 1; // Seconds before first retry
 
-		while (true) {
+		while (true && retries<=TRANSACTION_RETRIES) {
 
 			DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 			// Requires a transaction because the counter may be updated by another instance meanwhile
@@ -517,6 +551,9 @@ public class PostEndpoint {
 			delay *= 2; // Easy exponential backoff
 		}
 
+		ReturnMessage msg = new ReturnMessage();
+		msg.setMessage("notok");
+		return msg;
 	}
 
 	/**
@@ -531,7 +568,7 @@ public class PostEndpoint {
 		int retries = 0;
 		int delay = 1; // Seconds before first retry
 
-		while (true) {
+		while (true && retries<=TRANSACTION_RETRIES) {
 
 			DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 			Transaction txn = datastore.beginTransaction();
@@ -585,6 +622,10 @@ public class PostEndpoint {
 			}
 			delay *= 2; // Easy exponential backoff
 		}
+
+		ReturnMessage msg = new ReturnMessage();
+		msg.setMessage("notok");
+		return msg;
 	}
 
 	/**

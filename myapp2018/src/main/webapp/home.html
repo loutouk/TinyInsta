@@ -56,6 +56,7 @@ var Session = {
                 },
             })
             .then(function(result) {
+
                 if (result != null) {
                     Session.userPost = result.items
                 } else {
@@ -272,6 +273,7 @@ function LikeBtnGenerator() {
             likeText = ""
             alreadyLiked = false
             m.request({
+
                     method: "GET",
                     url: "http://localhost:8080/_ah/api/myApi/v1/likes/:postId/:userName",
                     params: {

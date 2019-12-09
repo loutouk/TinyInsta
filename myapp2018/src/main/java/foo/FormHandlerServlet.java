@@ -28,7 +28,8 @@ import java.text.SimpleDateFormat;
 public class FormHandlerServlet extends HttpServlet {
 
     /**
-     * creates the post entity with the image and its data
+     * Creates the post entity with the image and its data
+     *
      * @param request
      * @param response
      * @throws IOException
@@ -59,16 +60,21 @@ public class FormHandlerServlet extends HttpServlet {
             }else{
                 // There should be only one element in the list because of name uniqueness
                 Entity followeeEntity = result.get(0);
-
-                // Create Post entity with its User as parent
+                // Creates Post entity with its User as parent, and let the Appengine generate the key
                 Entity e = new Entity("Post", followeeEntity.getKey());
                 e.setProperty("name", name);
                 // Regex splits the string on a delimiter defined as: zero or more whitespace, a literal comma, zero or more whitespace
                 ArrayList<String> hashtagList = new ArrayList<>(Arrays.asList(hashtag.split("\\s*,\\s*")));
                 e.setProperty("hashtag", hashtagList);
                 e.setProperty("image", imageUrl);
+<<<<<<< HEAD
                 SimpleDateFormat pattern = new SimpleDateFormat("dd/MM/yyyy HH:mm");
                 e.setProperty("date", pattern.format(new Date()));
+=======
+                e.setProperty("date", new Date());
+                // Use - symbol to get newer Post first
+                e.setProperty("timestamp", -System.currentTimeMillis()/1000);
+>>>>>>> 68938441f62d315bdce8d42574b00ea0496666a6
                 datastore.put(e);
             }
 

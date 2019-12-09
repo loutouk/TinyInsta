@@ -17,6 +17,8 @@ import java.io.IOException;
 public class Logout extends HttpServlet {
     /**
      * destroy the client session and redirect him to the home page
+     * clients cookie can maintain the connection after a logout
+     *
      * @param request
      * @param response
      * @throws IOException

@@ -38,8 +38,6 @@ public class Log extends HttpServlet {
     public void doPost(HttpServletRequest req, HttpServletResponse res) throws IOException {
 
 
-
-
         if(req.getSession(false) != null && req.getSession(false).getAttribute("name") != null){
             res.sendRedirect(req.getContextPath() + "/home.html"); // Already logged in
         } else if(req.getParameter("name") != null){
