@@ -67,14 +67,10 @@ public class FormHandlerServlet extends HttpServlet {
                 ArrayList<String> hashtagList = new ArrayList<>(Arrays.asList(hashtag.split("\\s*,\\s*")));
                 e.setProperty("hashtag", hashtagList);
                 e.setProperty("image", imageUrl);
-<<<<<<< HEAD
                 SimpleDateFormat pattern = new SimpleDateFormat("dd/MM/yyyy HH:mm");
                 e.setProperty("date", pattern.format(new Date()));
-=======
-                e.setProperty("date", new Date());
                 // Use - symbol to get newer Post first
                 e.setProperty("timestamp", -System.currentTimeMillis()/1000);
->>>>>>> 68938441f62d315bdce8d42574b00ea0496666a6
                 datastore.put(e);
             }
 
