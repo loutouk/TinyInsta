@@ -9,4 +9,14 @@
     <property name="java.util.logging.config.file" value="WEB-INF/logging.properties"/>
   </system-properties>
 
+  <!-- Ajout de fichier general -->
+  <!-- Je dois trouver le bon chemin car pour l'instant la favicon a disparue et le css ne fonctionne pas -->
+  <!-- <static-files>
+      <include path="/index.html"></include>
+      <include path="/home.html"></include>
+      <include path="/**.css"></include>
+      <include path="/js/*.js"></include>
+      <include path="/favicon.ico"></include>
+  </static-files> -->
+
 </appengine-web-app>

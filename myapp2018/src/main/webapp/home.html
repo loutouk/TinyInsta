@@ -3,21 +3,22 @@
 <head>
     <meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
     <title>TinyInsta</title>
-    <style>
-	.post-img { width: 300px; }
-	h1 { color: rgb(34, 147, 245); margin: 15px; }
-	body { font-family: "Verdana", "Times New Roman", Times, serif; }
-	hr { width:100%; height:1px; background: #fff; margin-bottom: 8px; }
-	form { margin-bottom: 10px; }
-	</style>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Cookie&display=swap" rel="stylesheet">
+    <link type="text/css" rel="stylesheet" href="css/normalize.css">
+    <link type="text/css" rel="stylesheet" href="css/materialize.css">
+    <link rel="stylesheet" href="css/main.css">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 </head>
 
 <body>
 
 <script src="https://unpkg.com/mithril/mithril.js"></script>
+<script src="js\materialize.min.js"></script>
+<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
 
 <script>
-
 function setFormActionUrl(vnode) {
     fetch("http://localhost:8080/blobstore-upload-url")
         .then((response) => {
@@ -68,131 +69,128 @@ var Session = {
 
 function createUserPage(userName) {
 
-
     m.request({
+        method: "GET",
+        url: "http://localhost:8080/_ah/api/myApi/v1/user/:userName",
+        params: {
+            userName: userName
+        },
+    })
+    .then(function(resultUser) {
+        if (resultUser != null) {
+            m.request({
+                    method: "GET",
+                    url: "http://localhost:8080/_ah/api/myApi/v1/userposts/:userName",
+                    params: {
+                        userName: userName
+                    },
+                })
+                .then(function(resultPosts) {
 
-            method: "GET",
-            url: "http://localhost:8080/_ah/api/myApi/v1/user/:userName",
-            params: {
-                userName: userName
-            },
-
-        })
-        .then(function(resultUser) {
-
-            if (resultUser != null) {
-
-
-                m.request({
+                    m.request({
                         method: "GET",
-                        url: "http://localhost:8080/_ah/api/myApi/v1/userposts/:userName",
+                        url: "http://localhost:8080/_ah/api/myApi/v1/subscriptions/:userA/:userB",
                         params: {
-                            userName: userName
+                            userA: Session.current.name,
+                            userB: userName
                         },
                     })
-                    .then(function(resultPosts) {
-
-                        m.request({
-                                method: "GET",
-                                url: "http://localhost:8080/_ah/api/myApi/v1/subscriptions/:userA/:userB",
-                                params: {
-                                    userA: Session.current.name,
-                                    userB: userName
+                    .then(function(resultSubscribed) {
+                        var followText = "";
+                        var alreadyFollowed = false;
+                        if (resultSubscribed != null) {
+                            followText = "Unfollow"
+                            alreadyFollowed = true
+                        } else {
+                            followText = "Follow"
+                            alreadyFollowed = false
+                        }
+                        m.mount(document.body, null) // Clean the body
+                        var UserPage = {
+                            view: function() {
+                                return m("div", {
+                                        class: "user-div blue-grey lighten-5"
                                 },
-                            })
-                            .then(function(resultSubscribed) {
-
-                                var followText = "";
-                                var alreadyFollowed = false;
-
-                                if (resultSubscribed != null) {
-
-                                    followText = "Unfollow"
-                                    alreadyFollowed = true
-
-                                } else {
-
-                                    followText = "Follow"
-                                    alreadyFollowed = false
-                                }
-
-                                m.mount(document.body, null) // Clean the body
-                                m.render(document.body, m("div", {
-                                        class: "user-div"
-                                    },
-                                    [
-                                        m("div", m(MenuLogo)),
-
-
-                                        m("h2", "About " + userName),
-
-
-
-                                        m(
-                                            "button", {
-                                                id: "follow_btn",
-                                                class: "follow_btn",
-                                                onclick: function() {
-
-
-                                                    if (alreadyFollowed == false) {
-
-                                                        m.request({
-                                                                method: "PUT",
-                                                                url: "http://localhost:8080/_ah/api/myApi/v1/subscriptions/:follower/:followee",
-                                                                params: {
-                                                                    follower: Session.current.name,
-                                                                    followee: userName
-                                                                },
-                                                            })
-                                                            .then(function(result) {
-                                                                alreadyFollowed = true
-                                                                var x = document.getElementById("follow_btn").innerHTML = "Unfollow"
-                                                            })
-
-
-                                                    } else {
-
-                                                        m.request({
-                                                                method: "DELETE",
-                                                                url: "http://localhost:8080/_ah/api/myApi/v1/subscriptions/:follower/:followee",
-                                                                params: {
-                                                                    follower: Session.current.name,
-                                                                    followee: userName
-                                                                },
-                                                            })
-                                                            .then(function(result) {
-                                                                alreadyFollowed = false
-                                                                var x = document.getElementById("follow_btn").innerHTML = "Follow"
-                                                            })
-
-                                                    }
-
-
-
-                                                },
-                                            }, followText
-                                        ),
-
-
-                                        m("hr", ),
-                                        m(PostGenerator, {
-                                            postItems: resultPosts.items
-                                        }),
-                                    ]))
-
-
-                            })
-
-                        m.redraw()
+                                [
+                                    m("div", m(MenuLogo)),
+                                    m("div", {class:"container"}, [
+                                        m("div.row", {class:"postlistcontainer"}, [
+                                            m("div.col", {class:"s6 m2"}, [
+                                                m("img", {src:"img/defpic.png", alt:"profil", class:"responsive-img circle profil-header profil pic"})
+                                            ]),
+                                            m("div.col", {class:"s6 m2"}, [
+                                                m("div.row", [
+                                                    m("div.col", {class:"s6 m6"}, [
+                                                        m("h6", {id:"profil-name"}, userName),
+                                                    ]),
+                                                    m("div.col", {class:"s6 m6"}, [
+                                                        m("button", {
+                                                            id: "follow_btn",
+                                                            class: "btn-small waves-effect waves-light follow_btn grey lighten-5 black-text",
+                                                            onclick: function() {
+                                                                if (alreadyFollowed == false) {
+                                                                    m.request({
+                                                                        method: "PUT",
+                                                                        url: "http://localhost:8080/_ah/api/myApi/v1/subscriptions/:follower/:followee",
+                                                                        params: {
+                                                                            follower: Session.current.name,
+                                                                            followee: userName
+                                                                        },
+                                                                    })
+                                                                    .then(function(result) {
+                                                                        alreadyFollowed = true
+                                                                        var x = document.getElementById("follow_btn").innerHTML = "Unfollow"
+                                                                    })
+                                                                } else {
+                                                                    m.request({
+                                                                        method: "DELETE",
+                                                                        url: "http://localhost:8080/_ah/api/myApi/v1/subscriptions/:follower/:followee",
+                                                                        params: {
+                                                                            follower: Session.current.name,
+                                                                            followee: userName
+                                                                        },
+                                                                    })
+                                                                    .then(function(result) {
+                                                                        alreadyFollowed = false
+                                                                        var x = document.getElementById("follow_btn").innerHTML = "Follow"
+                                                                    })
+                                                                }
+                                                            },
+                                                        }, followText),
+                                                    ]),
+                                                ]),
+                                                m("div.row", [
+                                                    m("div.col", {class:"s6,m6"}, [
+                                                        m("p", document.querySelectorAll('#postList1 .container-photo').length + " posts"),
+                                                    ]),
+                                                    m("div.col", {class:"s6,m6"}, [
+                                                        m("p", " followers"),
+                                                    ]),
+                                                    // m("div.col", {class:"s4,m4"}, [
+                                                    //     m("p", " following"),
+                                                    // ])
+                                                ])
+                                            ]),
+                                            m("div.col", {class:"s12 m12 l12"}, [
+                                                m(PostGeneratorProfil, {
+                                                    postItems: resultPosts.items
+                                                }),
+                                            ])
+                                        ])
+                                    ])
+                                ])
+                            }
+                        }
+                        m.mount(document.body, UserPage);
+                        var elems = document.querySelectorAll('.modal');
+                        var instance = M.Modal.init(elems);
                     })
+                })
+        } else {
+            swal("No user found!")
+        }
 
-
-            } else {
-                alert("no user found")
-            }
-
-        })
+    })
 
 }
 
@@ -207,18 +205,32 @@ function createHashtagPage(hashtagParam) {
             })
             .then(function(result) {
                 m.mount(document.body, null) // Clean the body
-                m.render(document.body, m("div", {
-                        class: "hashtagposts-div"
-                    },
-                    [
-                        m("div", m(MenuLogo)),
-                        m("h2", "All posts with #" + hashtagParam),
-                        m("hr", ),
-                        m(PostGenerator, {
-                            postItems: result.items
-                        }),
-                    ]))
-                m.redraw()
+                var HashtagPage = { view: function() { return m("div", {class: "hashtagposts-div blue-grey lighten-5", id:"user-overflow"}, [
+                    m("div", m(MenuLogo)),
+                    m("div.container", [
+                        m("div.row", {class:"postlistcontainer"}, [
+                            m("div.col", {class:"s12 m9 l9"}, [
+                                m("h5", {class:"blue-text text-darken-4"}, "#" + hashtagParam),
+                                m(PostGenerator, {
+                                    postItems: result.items
+                                }),
+                            ]),
+                            m("div.col", {class:"s12 m3 l3"}, [
+                                m("div.row", [
+                                    m("div.col", {class:"s12 m4 l4"}, [
+                                        m("img", {src:"img/defpic.png", alt:"profil", class:"responsive-img circle"})
+                                    ]),
+                                    m("div.col", {class:"s12 m8 l8"}, [
+                                        m("h6", {id:"profil-name", onclick: function() {createUserPage(Session.current.name)}}, Session.current.name),
+                                        m("p", Session.current.name)//juste pour le visuel
+                                    ]),
+                                ]),
+                            ])
+                        ])
+                    ])
+                ])}}
+                m.mount(document.body, HashtagPage);
+                 document.getElementsByTagName("BODY")[0].style.overflow = "visible";
 
             })
     }
@@ -251,19 +263,14 @@ function LikeCountGenerator() {
 }
 
 function LikeBtnGenerator() {
-
     var likeText
     var alreadyLiked
     var postId
-
     return {
-
         oninit: function(vnode) {
-
             postId = vnode.attrs.postIdParam
             likeText = ""
             alreadyLiked = false
-
             m.request({
                     method: "GET",
                     url: "http://localhost:8080/_ah/api/myApi/v1/likes/:postId/:userName",
@@ -273,74 +280,115 @@ function LikeBtnGenerator() {
                     },
                 })
                 .then(function(resultLiked) {
-
                     if (resultLiked != null) {
-                        likeText = "Unlike"
+                        likeText = "favorite"
                         alreadyLiked = true
                     } else {
-                        likeText = "Like"
+                        likeText = "favorite_border"
                         alreadyLiked = false
                     }
-
                 })
-
-
         },
         view: function(vnode) {
-
-            return m("button", {
-                id: postId.id,
-                class: "like_btn",
-                onclick: function() {
-                    if (alreadyLiked == false) {
-                        m.request({
-                                method: "PUT",
-                                url: "http://localhost:8080/_ah/api/myApi/v1/likes/:postId/:parentId/:userName",
-                                params: {
-                                    postId: postId.id,
-                                    parentId: postId.parent.id,
-                                    userName: Session.current.name
-                                },
-                            })
-                            .then(function(result) {
-                                alreadyLiked = true
-                                document.getElementById(postId.id).innerHTML = "Unlike"
-                                var count = document.getElementById("likeText" + postId.id).innerHTML
-                                var editedCount = parseInt(count) + 1
-                                document.getElementById("likeText" + postId.id).innerHTML = editedCount
-
-                            })
-                    } else {
-                        m.request({
-                                method: "DELETE",
-                                url: "http://localhost:8080/_ah/api/myApi/v1/likes/:postId/:userName",
-                                params: {
-                                    postId: postId.id,
-                                    userName: Session.current.name
-                                },
-                            })
-                            .then(function(result) {
-                                alreadyLiked = false
-                                document.getElementById(postId.id).innerHTML = "Like"
-                                var count = document.getElementById("likeText" + postId.id).innerHTML
-                                var editedCount = parseInt(count) - 1
-                                document.getElementById("likeText" + postId.id).innerHTML = editedCount
-                            })
+            return m("a", {class:"btn-flat waves-effect waves-light"}, [
+                m("i", {
+                    id: postId.id,
+                    class: "like_btn material-icons",
+                    onclick: function() {
+                        if (alreadyLiked == false) {
+                            m.request({
+                                    method: "PUT",
+                                    url: "http://localhost:8080/_ah/api/myApi/v1/likes/:postId/:parentId/:userName",
+                                    params: {
+                                        postId: postId.id,
+                                        parentId: postId.parent.id,
+                                        userName: Session.current.name
+                                    },
+                                })
+                                .then(function(result) {
+                                    alreadyLiked = true
+                                    document.getElementById(postId.id).innerHTML = "favorite"
+                                    var count = document.getElementById("likeText" + postId.id).innerHTML
+                                    var editedCount = parseInt(count) + 1
+                                    document.getElementById("likeText" + postId.id).innerHTML = editedCount
+                                })
+                        } else {
+                            m.request({
+                                    method: "DELETE",
+                                    url: "http://localhost:8080/_ah/api/myApi/v1/likes/:postId/:userName",
+                                    params: {
+                                        postId: postId.id,
+                                        userName: Session.current.name
+                                    },
+                                })
+                                .then(function(result) {
+                                    alreadyLiked = false
+                                    document.getElementById(postId.id).innerHTML = "favorite_border"
+                                    var count = document.getElementById("likeText" + postId.id).innerHTML
+                                    var editedCount = parseInt(count) - 1
+                                    document.getElementById("likeText" + postId.id).innerHTML = editedCount
+                                })
+                        }
                     }
-                }
-            }, likeText)
-        }
+                }, likeText)
+            ])
+        },
     }
 }
 
 
 var MenuLogo = {
     view: function() {
-        return m("h1",
-            [
-                m("a[href='http://localhost:8080/']", "TinyInsta"),
-            ],
-        )
+        return m("div", {class:"navbar-fixed"}, [
+            m("nav", {class:"white"}, [
+                m("div", {class:"nav-wrapper container"}, [ // + white
+                    m("a[href='http://localhost:8080/']", {class:"brand-logo black-text"}, [
+                        m("i", {class:"material-icons"},"album"),
+                    ], " TinyInsta"),
+
+                    m("form", {
+                        class:"nav-search",
+                        onsubmit: function(e) {
+                            e.preventDefault()
+                            createUserPage(SearchForm.values.username)
+                        }}, [
+                        m("div", {class:"input-field"}, [
+                            m("input", {
+                                id:"search",
+                                type:"search",
+                                required:"true",
+                                placeholder:"Username",
+                                oninput: function(e) {
+                                    SearchForm.values.username = e.target.value
+                                }}),
+                            m("label", {class:"label-icon", for:"search"}, [
+                                m("i", {class:"material-icons black-text"}, "search")
+                            ]),
+                            m("i", {class:"material-icons black-text"}, "close")
+                        ])
+                    ]),
+
+                    m("ul", {id:"nav-mobile", class:"right hide-on-med-and-down"}, [
+                        m("li", [m("a[href='#']", [m("i", {class:"material-icons black-text"}, "favorite_outline")])]), //ou bien button
+                        m("li", [m("a[href='#']", {onclick: function() {createUserPage(Session.current.name)}}, [m("i", {class:"material-icons black-text"}, "person_outline")])]),
+                        m("li", [
+                            m("form", {
+                                    id: "logoutForm",
+                                    method: "GET",
+                                    action: "http://localhost:8080/logout",
+                                },
+                                [
+                                    m("button.btn-flat[type=submit]", {class:"waves-effect waves-teal transparent", name:"action"}, [
+                                        m("i", {class:"material-icons black-text", id:"icon-logout"}, "exit_to_app")
+                                    ])
+                                ]
+                            )
+                        ])
+                    ])
+                ])
+            ])
+        ])
+
     }
 }
 
@@ -348,68 +396,99 @@ var PostGenerator = {
     view: function(vnode) {
 
         if (vnode.attrs.postItems == null) {
-            return m("div", "No posts found.")
+            return m("div.flow-text", "No posts found.")
         }
+        // var d = new Date();
+        options = {year: "numeric", month: "numeric", day: "numeric",
+           hour: "numeric", minute: "numeric",
+           hour12: false};
+        // d = new Intl.DateTimeFormat("en-GB", options).format(d);
 
         return m(".post-list", vnode.attrs.postItems.map(function(item) {
 
-            return m(".post-list-item",
-                [
-                    m(
-                        "p",
-                        [
-                            m(
-                                "button", {
-                                    class: "user_btn",
-                                    onclick: function() {
-                                        createUserPage(item.properties.name)
-                                    },
-                                }, item.properties.name
-                            ),
-
-
-                            m(
-                                ".hashtag-list", item.properties.hashtag.map(function(hashtag) {
-
-                                    return m(
-                                        "button", {
-                                            class: "hashtag-btn",
-                                            onclick: function() {
-                                                createHashtagPage(hashtag)
-                                            },
-                                        }, hashtag
-                                    )
-
-                                })
-                            ),
-
+            return m("div", {class:"post-list-item row"}, [
+                m("div", {class:"col s12 m9"}, [
+                    m("div", {class:"card"}, [
+                        m("div", {class:"row post-title"}, [
+                            m("div.col", {class:"s2 m2"}, [
+                                m("img", {src:"img/defpic.png", alt:"profil", class:"responsive-img circle img-size"})
+                            ]),
+                            m("div.col", {class:"s10 m10"}, [
+                                m("button", {
+                                    class: "btn-flat user_btn post-title-text",
+                                    onclick: function() {createUserPage(item.properties.name)},
+                                }, item.properties.name),
+                            ]),
+                        ]),
+                        m("div", {class:"card-image"}, [
+                            m("img", {src:item.properties.image}),
+                        ]),
+                        m("div", {class:"card-action"}, [
+                            m(LikeBtnGenerator, {postIdParam: item.key}),
                             m(LikeCountGenerator, {
                                 postIdParam: item.key
                             }),
                             m("span", " like "),
-                            m(LikeBtnGenerator, {
-                                postIdParam: item.key
-                            }),
+                        ]),
+                        m("div", {class:"card-content"}, [
+                            m("p", "I am a very simple card. I am good at containing small bits of information."),
+                            m(".hashtag-list", item.properties.hashtag.map(function(hashtag) {
+                                return m("button", {
+                                    class: "hashtag-btn btn-flat",
+                                    onclick: function() {createHashtagPage(hashtag)},
+                                }, m("span", {class:"blue-text text-darken-2", id:"hashtag-badge"},"#" + hashtag +" "))
+                            })),
 
-                        ],
-                        " The " + item.properties.date
-                    ),
+                            m("p", (new Intl.DateTimeFormat("en-GB", options).format(new Date(item.properties.date))))
+                        ]),
+                    ])
+                ]),
 
-                    m(
-                        "img", {
-                            class: "post-img",
-                            src: item.properties.image
-                        }
-                    ),
 
-                    m(
-                        "hr",
-                    ),
-                ])
+            ])
         }))
     },
 }
 
+var PostGeneratorProfil = {
+    view: function(vnode) {
+
+        if (vnode.attrs.postItems == null) {
+            return m("div.flow-text", "This user hasn't posted yet!.")
+        }
+
+        return m(".post-list row", {id:"postList1"}, vnode.attrs.postItems.map(function(item, index) {
+
+            return m("div", [
+                m("div", {class:"col s12 m4 container-photo modal-trigger", href:"#modal"+index}, [
+                    // m("img.profil-photo", {src:item.properties.image}),
+                    m("div.subcontainer-photo", [
+                        m("div.profil-photo", {
+                            'style': { 'background-image' : 'url(\"'+item.properties.image+'\")'}
+                        })
+                    ]),
+                ]),
+                m("div", {class:"modal", id:"modal"+index}, [
+                    m("div", {class:"modal-content"}, [
+                        m("div", {class:"col s12 m8", id:"modal-img"}, [
+                            m("img", {class:"responsive-img", id:"img-rectif", src: item.properties.image})
+                        ]),
+                        m("div", {class:"col s12 m4"}, [
+                            m("h5", "Commentaires"),
+                            m("p", "I am a very simple card. I am good at containing small bits of information."),
+                            m(".hashtag-list", item.properties.hashtag.map(function(hashtag) {
+                                return m("button", {
+                                    class: "hashtag-btn btn-flat",
+                                    onclick: function() {createHashtagPage(hashtag)},
+                                }, m("span", {class:"blue-text text-darken-2", id:"hashtag-badge"},"#" + hashtag +" "))
+                            })),
+                        ])
+                    ]),
+                ])
+            ])
+        }))
+    },
+}
 
 var PostView = {
     oninit: fetchSession,
@@ -425,74 +504,79 @@ var PostView = {
 
 var Main = {
     view: function() {
-        return m("main", [
+        return m("main", {class:"blue-grey lighten-5"}, [
 
             m("div", m(MenuLogo)),
 
-            m("form", {
-                    id: "logoutForm",
-                    method: "GET",
-                    action: "http://localhost:8080/logout",
-                },
-                [
-                    m("h3", "Connected as " + Session.current.name),
-                    m("button.button[type=submit]", "Logout"),
+            m("div", {class:"container"}, [
+
+                m("div", {class:"row postlistcontainer"}, [
+                    m("div.col", {class:"s12 m9 l9"}, [
+                        m("form", {
+                                id: "createPostForm",
+                                method: "POST",
+                                enctype: "multipart/form-data",
+                                oncreate: setFormActionUrl
+                            },
+                            [
+                                // User name is used in the form to send the ajax request, it does not need to be shown
+                                m("label.label", {
+                                    style: {
+                                        display: "none"
+                                    }
+                                }, "User "),
+                                m("input.input[type=text][value=" + Session.current.name + "][name=name]", {
+                                    style: {
+                                        display: "none"
+                                    }
+                                }),
+                                m("div.row", [
+                                    m("div.col", {class:"s12 m3 l3"}, [
+                                        m("div", {class:"file-field input-field", id:"post-box"}, [
+                                            m("div", {class:"btn waves-effect waves-light grey lighten-5 black-text"}, [
+                                                m("span", [
+                                                    m("i", {class:"material-icons"}, "add")
+                                                ]),
+                                                m("input", {type:"file", name:"image", id:"file", class:"input-file"})
+                                            ]),
+                                            m("div", {class:"file-path-wrapper"}, [
+                                                m("input", {class:"file-path validate", type:"text", placeholder:"Picture"})
+                                            ])
+                                        ]),
+                                    ]),
+                                    m("div.col", {class:"s12 m7 l7"}, [
+                                        m("input.input[type=text][placeholder='hashtag1, hashtag2'][name=hashtag]"),
+                                    ]),
+                                    m("div.col", {class:"s12 m2 l2 right"}, [
+                                        m("div", {class:"file-field input-field", id:"post-box"}, [
+                                        m("button.btn[type=submit]", {class:"waves-effect waves-light right grey lighten-5 black-text"}, "Post")
+                                    ]),
+                                    ])
+                                ])
+                        ]),
+                        m("div", {id: "posts"}, m(PostView)),
+                    ]),
+                    m("div.col", {class:"s12 m3 l3"}, [
+                        m("div.row", [
+                            m("div.col", {class:"s12 m4 l4"}, [
+                                m("img", {src:"img/defpic.png", alt:"profil", class:"responsive-img circle"})
+                            ]),
+                            m("div.col", {class:"s12 m8 l8"}, [
+                                m("h6", {id:"profil-name", onclick: function() {createUserPage(Session.current.name)}}, Session.current.name),
+                                m("p", Session.current.name)//juste pour le visuel
+                            ]),
+                        ]),
+                    ])
                 ]),
 
-            m("form", {
-                onsubmit: function(e) {
-                    e.preventDefault()
-                    createUserPage(SearchForm.values.username)
-                }
-            }, [
-                m("label.label", "name"),
-                m("input.input[type=text][placeholder=name]", {
-                    oninput: function(e) {
-                        SearchForm.values.username = e.target.value
-                    },
-                }),
-                m("button.button[type=submit]", "Search user"),
-            ]),
-
-            m("form", {
-                    id: "createPostForm",
-                    method: "POST",
-                    enctype: "multipart/form-data",
-                    oncreate: setFormActionUrl
-                },
-                [
-                    // User name is used in the form to send the ajax request, it does not need to be shown
-                    m("label.label", {
-                        style: {
-                            display: "none"
-                        }
-                    }, "User "),
-                    m("input.input[type=text][value=" + Session.current.name + "][name=name]", {
-                        style: {
-                            display: "none"
-                        }
-                    }),
-                    m("label.label", "Hashtag "),
-                    m("input.input[type=text][placeholder='HashtagOne, HashtagB...'][name=hashtag]"),
-                    m("input[type=file][name=image]"),
-                    m("button.button[type=submit]", "Post"),
-                ]),
-
-            m("hr", ),
-
-            m("div", {
-                id: "posts"
-            }, m(PostView)),
-
-
+            ])
         ])
     }
 }
 
-m.mount(document.body, Main)
+m.mount(document.body, Main);
 
 </script>
-
 
 </body>
 

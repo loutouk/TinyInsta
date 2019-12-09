@@ -16,13 +16,13 @@
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
     <maven.compiler.showDeprecation>true</maven.compiler.showDeprecation>
-    
+
         <endpoints.framework.version>2.1.2</endpoints.framework.version>
     <endpoints.management.version>1.0.4</endpoints.management.version>
-    
+
     <endpoints.project.id>SuperMomo44</endpoints.project.id>
   </properties>
-  
+
   <dependencyManagement>
     <dependencies>
       <dependency>

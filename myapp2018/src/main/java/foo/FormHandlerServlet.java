@@ -12,6 +12,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.*;
+import java.text.SimpleDateFormat;
+
 
 /**
  * handles the creation of a post
@@ -65,7 +67,8 @@ public class FormHandlerServlet extends HttpServlet {
                 ArrayList<String> hashtagList = new ArrayList<>(Arrays.asList(hashtag.split("\\s*,\\s*")));
                 e.setProperty("hashtag", hashtagList);
                 e.setProperty("image", imageUrl);
-                e.setProperty("date", new Date());
+                SimpleDateFormat pattern = new SimpleDateFormat("dd/MM/yyyy HH:mm");
+                e.setProperty("date", pattern.format(new Date()));
                 datastore.put(e);
             }
 

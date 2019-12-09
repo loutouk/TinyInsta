@@ -1,0 +1,122 @@
+#icon-logout {
+    padding: 0;
+    margin-top: -16px;
+}
+#logoutForm {
+    /* padding: 0 6px; */
+}
+#logoutForm:hover {
+    background-color: rgba(0,0,0,.1);
+}
+.brand-logo {
+    padding:  0 6px;
+    font-family: "Cookie";
+}
+#nav-mobile {
+    display: inline-block;
+}
+.nav-search {
+    width: 28%;
+    margin: 0 0 0 36%;
+    display: inline-block;
+}
+#post-box {
+    margin-top: 0px;
+}
+
+body #user-overflow {
+    overflow: auto;
+}
+.postlistcontainer {
+    margin-top: 30px;
+}
+div .post-title {
+    width: 100%;
+    height: auto;
+    padding: 12px 0px 6px 16px;
+    margin: 0px 0px 0px 0px;
+}
+.post-title-text {
+    margin-left: -20px;
+    font-weight: bold;
+    font-size: 20px;
+}
+.btn-flat {
+    text-transform: lowercase;
+}
+.hashtag-btn {
+    padding: 0;
+}
+.card .card-action a:not(.btn):not(.btn-large):not(.btn-small):not(.btn-large):not(.btn-floating) {
+    color: inherit;
+    padding: 0;
+}
+.card .card-action a:not(.btn):not(.btn-large):not(.btn-small):not(.btn-large):not(.btn-floating):hover {
+    color: #888;
+    padding: 0;
+}
+
+.profil-header {
+    width: 100px;
+}
+
+#hashtag-badge {
+    margin: 0 4px;
+}
+
+.container-photo {
+    /* height: 200px; */
+    display: inline-block;
+    width: 50%;
+    /* padding: 8px; */
+    /* border: 1px solid red; */
+}
+.subcontainer-photo {
+    background-color: rgba(80, 80, 80, 1);
+    margin: 10px 2px;
+}
+.profil-photo {
+    width: 100%;
+    /* height: 100%; */
+    height: 0;
+    padding-bottom: 100%;
+    background-size: cover;
+}
+.profil-photo:hover {
+    cursor: pointer;
+    opacity: .6;
+}
+.post-open {
+    position: absolute;
+    margin:auto;
+    z-index: 100;
+    display:none;
+}
+
+#profil-name {
+    font-weight: bold;
+    margin-bottom: -18px;
+}
+
+#profil-name:hover {
+    cursor: pointer;
+}
+
+.img-size {
+    width: 80%;
+}
+
+/* .modal {
+    overflow-y: hidden;
+} */
+
+.modal .modal-content {
+    padding: 0;
+}
+
+#modal-img {
+    padding: 0;
+}
+#img-rectif {
+    margin-bottom: -6px;
+}

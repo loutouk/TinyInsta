@@ -3,11 +3,16 @@
 <head>
 	<meta http-equiv="content-type" content="application/xhtml+xml; charset=UTF-8" />
 	<title>TinyInsta</title>
-	<style>
+	<!-- <style>
 	h1 h2 { color: rgb(34, 147, 245); margin: 15px; }
 	body { font-family: "Verdana", "Times New Roman", Times, serif; }
 	hr { width:100%; height:1px; background: #fff; margin-bottom: 8px; }
-	</style>
+	</style> -->
+	<!-- <link rel="stylesheet" href="css/main.css"> -->
+	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link type="text/css" rel="stylesheet" href="css/normalize.css">
+    <link type="text/css" rel="stylesheet" href="css/materialize.css">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 </head>
 <body>
 
@@ -27,9 +32,9 @@ var AddUser = {
             })
             .then(function(result) {
                 if (result != null) {
-                    alert("creation successful.")
+                    swal("creation successful.")
                 } else {
-                    alert("error creation. Try another name.")
+                    swal("error creation. Try another name.")
                 }
             })
     }
@@ -51,46 +56,43 @@ function uploadSave(e) {
 var Main = {
     view: function() {
 
-        return m("main", [
+        return m("div", {class:"container row"}, [
+			m("div", {class:"col s4 m4 l4"}),
+			m("div", {class:"col s4 m4 l4"}, [
 
-            m("h1", {
-                class: "title"
-            }, "TinyInsta"),
+	            m("h1", {
+	                class: "title center-align"
+	            }, "TinyInsta"),
 
-            m("h2", {
-                class: "title"
-            }, "Log In"),
+	            m("form", {
+	                    id: "loginForm",
+	                    action: "http://localhost:8080/log",
+	                    method: "POST",
+	                },
+	                [
+	                    m("input.input[type=text][placeholder=Username][name=name]"),
+	                    m("button.btn[type=submit]", {class:"waves-effect waves-light", name:"action"}, "Log in"),
+	                ]),
 
+	            m("form", {
+	                    onsubmit: function(e) {
+	                        e.preventDefault()
+	                        AddUser.add()
+	                    },
+	                    id: "addUserForm",
+	                },
+	                [
+	                    m("input.input[type=text][placeholder=Username][name=name]", {
+	                        oninput: function(e) {
+	                            AddUser.current.name = e.target.value
+	                        },
+	                    }),
+	                    m("button.btn[type=submit]", {class:"waves-effect waves-light", name:"action"}, "Create User"),
+	                ]),
 
-            m("form", {
-                    id: "loginForm",
-                    action: "http://localhost:8080/log",
-                    method: "POST",
-                },
-                [
-                    m("label.label", "User name"),
-                    m("input.input[type=text][placeholder=User name][name=name]"),
-                    m("button.button[type=submit]", "Connect"),
-                ]),
-
-            m("form", {
-                    onsubmit: function(e) {
-                        e.preventDefault()
-                        AddUser.add()
-                    },
-                    id: "addUserForm",
-                },
-                [
-                    m("label.label", "User name"),
-                    m("input.input[type=text][placeholder=name][name=name]", {
-                        oninput: function(e) {
-                            AddUser.current.name = e.target.value
-                        },
-                    }),
-                    m("button.button[type=submit]", "Create User"),
-                ]),
-
-        ])
+	        ]),
+			m("div", {class:"col s4 m4 l4"})
+		])
     }
 }
 
@@ -101,6 +103,7 @@ m.mount(document.body, Main)
 
 
 </script>
-
+<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+<script type="text/javascript" src="js/materialize.min.js"></script>
 </body>
 </html>
