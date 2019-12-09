@@ -14,13 +14,13 @@ TinyInsta is a scalable Instagram like toy app to get familiar with Google Appen
 ![alt text](https://github.com/loutouk/TinyInsta/blob/master/myapp2018/data/previewB.png)
 
 ## Load Analysis
-Post some Post action is logarithmic with the number of item to post because decoupled from the number of followers. It should even be considered constant.
+The action of POSTing a Post is logarithmic with the number of elements to be posted because it is decoupled from the number of followers. It must even be considered as constant.
 
 ![alt text](https://github.com/loutouk/TinyInsta/blob/master/myapp2018/data/post.png)
 
 
 
-Get some Post action is linear with the number of items we want to access
+The action of GETing some Post is linear with the number of items we want to access.
 
 ![alt text](https://github.com/loutouk/TinyInsta/blob/master/myapp2018/data/get.png)
 
