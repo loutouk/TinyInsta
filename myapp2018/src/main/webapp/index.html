@@ -22,7 +22,7 @@ var AddUser = {
     add: function() {
         return m.request({
                 method: "POST",
-                url: "http://localhost:8080/_ah/api/myApi/v1/user",
+                url: "https://mystical-app-220509.appspot.com/_ah/api/myApi/v1/user",
                 body: {
                     name: AddUser.current.name
                 },
@@ -45,7 +45,7 @@ function uploadSave(e) {
 
     m.request({
         method: "POST",
-        url: "http://localhost:8080/_ah/api/myApi/v1/testPost",
+        url: "https://mystical-app-220509.appspot.com/_ah/api/myApi/v1/testPost",
         body: body
     })
 }
@@ -64,7 +64,7 @@ var Main = {
 
 	            m("form", {
 	                    id: "loginForm",
-	                    action: "http://localhost:8080/log",
+	                    action: "https://mystical-app-220509.appspot.com/log",
 	                    method: "POST",
 	                },
 	                [

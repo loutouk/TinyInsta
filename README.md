@@ -1,7 +1,7 @@
 # WebAndCloud
 
 ## About
-TinyInsta is a scalable Instagram like toy app to get familiar with Google Appengine and Google Datastore.
+[TinyInsta](https://mystical-app-220509.appspot.com/) is a scalable Instagram like toy app to get familiar with Google Appengine and Google Datastore.
 
 ## Preview
 

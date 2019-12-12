@@ -31,20 +31,6 @@ public class PostEndpoint {
 	private final int LIKE_COUNTER_MAX_SHARD = 20; // Number of shards for a like counter, can be increased to allow more load
 
 	/**
-	 * for demonstration mainly. Not supposed to be used after deployment
-	 * @return all the posts
-	 */
-	@Deprecated
-	@ApiMethod(name = "getposts", path = "posts", httpMethod = ApiMethod.HttpMethod.GET)
-	public List<Entity> getAllPost() {
-		Query q = new Query("Post").addSort("date");
-		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
-		PreparedQuery pq = datastore.prepare(q);
-		List<Entity> result = pq.asList(FetchOptions.Builder.withDefaults());
-		return result;
-	}
-
-	/**
 	 *
 	 * sorting on the date needs to be done manually on this side because the result is a set of query
 	 * so it can not be sorted on an entity property (the timestamp date) with the appengine Query sorting method
@@ -75,21 +61,11 @@ public class PostEndpoint {
 		// Load tests and profiling show no difference in time to fetch from 10 to 10000 posts
 
 		ArrayList<Entity> posts = new ArrayList<>();
-		//TreeSet<Post> posts = new TreeSet<>();
 
 		for(Entity userId : userIds){
 			q = new Query("Post").setAncestor(userId.getKey());
 			pq = datastore.prepare(q);
 			List<Entity> userPosts = pq.asList(FetchOptions.Builder.withDefaults());
-			/*for(Entity postEntity : userPosts){
-				Post postInstance = new Post();
-				postInstance.setName((String) postEntity.getProperty("name"));
-				postInstance.setTimestamp((Long) postEntity.getProperty("timestamp"));
-				postInstance.setImage((String) postEntity.getProperty("image"));
-				postInstance.setHashtag((ArrayList<String>) postEntity.getProperty("hashtag"));
-				postInstance.setDate((Date) postEntity.getProperty("date"));
-				posts.add(postInstance);
-			}*/
 			posts.addAll(userPosts);
 		}
 
@@ -106,10 +82,12 @@ public class PostEndpoint {
 	@ApiMethod(name = "getuserposts", path = "userposts/{userName}", httpMethod = ApiMethod.HttpMethod.GET)
 	public List<Entity> getUserPost(@Named("userName") String userName) {
 		Query q = new Query("Post")
-				.setFilter(new FilterPredicate("name", FilterOperator.EQUAL, userName)).addSort("date", Query.SortDirection.DESCENDING);
+				.setFilter(new FilterPredicate("name", FilterOperator.EQUAL, userName));
 		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 		PreparedQuery pq = datastore.prepare(q);
 		List<Entity> result = pq.asList(FetchOptions.Builder.withDefaults());
+		// Can be replaced with a adding a sort on the query with the date or timestamp property
+		Collections.sort(result, (o1, o2) -> (int) (((Long) o1.getProperty("timestamp")) - ((Long) o2.getProperty("timestamp"))));
 		return result;
 	}
 
@@ -121,10 +99,12 @@ public class PostEndpoint {
 	@ApiMethod(name = "gethashtagpost", path = "hashtagpost/{hashtag}", httpMethod = ApiMethod.HttpMethod.GET)
 	public List<Entity> getHashtagPost(@Named("hashtag") String hashtag) {
 		Query q = new Query("Post")
-				.setFilter(new FilterPredicate("hashtag", FilterOperator.EQUAL, hashtag)).addSort("date", Query.SortDirection.DESCENDING);
+				.setFilter(new FilterPredicate("hashtag", FilterOperator.EQUAL, hashtag));
 		DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
 		PreparedQuery pq = datastore.prepare(q);
 		List<Entity> result = pq.asList(FetchOptions.Builder.withDefaults());
+		// Can be replaced with a adding a sort on the query with the date or timestamp property
+		Collections.sort(result, (o1, o2) -> (int) (((Long) o1.getProperty("timestamp")) - ((Long) o2.getProperty("timestamp"))));
 		return result;
 	}
 

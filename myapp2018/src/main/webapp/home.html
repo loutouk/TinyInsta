@@ -20,7 +20,7 @@
 
 <script>
 function setFormActionUrl(vnode) {
-    fetch("http://localhost:8080/blobstore-upload-url")
+    fetch("https://mystical-app-220509.appspot.com/blobstore-upload-url")
         .then((response) => {
             return response.text();
         })
@@ -32,7 +32,7 @@ function setFormActionUrl(vnode) {
 }
 
 function fetchSession() {
-    fetch("http://localhost:8080/session")
+    fetch("https://mystical-app-220509.appspot.com/session")
         .then(response => response.text())
         .then(data => {
             Session.current.name = data
@@ -50,7 +50,7 @@ var Session = {
     listPost: function() {
         return m.request({
                 method: "GET",
-                url: "http://localhost:8080/_ah/api/myApi/v1/subscriberposts/:userName",
+                url: "https://mystical-app-220509.appspot.com/_ah/api/myApi/v1/subscriberposts/:userName",
                 params: {
                     userName: Session.current.name
                 },
@@ -72,7 +72,7 @@ function createUserPage(userName) {
 
     m.request({
         method: "GET",
-        url: "http://localhost:8080/_ah/api/myApi/v1/user/:userName",
+        url: "https://mystical-app-220509.appspot.com/_ah/api/myApi/v1/user/:userName",
         params: {
             userName: userName
         },
@@ -81,16 +81,18 @@ function createUserPage(userName) {
         if (resultUser != null) {
             m.request({
                     method: "GET",
-                    url: "http://localhost:8080/_ah/api/myApi/v1/userposts/:userName",
+                    url: "https://mystical-app-220509.appspot.com/_ah/api/myApi/v1/userposts/:userName",
                     params: {
                         userName: userName
                     },
                 })
                 .then(function(resultPosts) {
 
+                    console.log(resultPosts)
+
                     m.request({
                         method: "GET",
-                        url: "http://localhost:8080/_ah/api/myApi/v1/subscriptions/:userA/:userB",
+                        url: "https://mystical-app-220509.appspot.com/_ah/api/myApi/v1/subscriptions/:userA/:userB",
                         params: {
                             userA: Session.current.name,
                             userB: userName
@@ -132,7 +134,7 @@ function createUserPage(userName) {
                                                                 if (alreadyFollowed == false) {
                                                                     m.request({
                                                                         method: "PUT",
-                                                                        url: "http://localhost:8080/_ah/api/myApi/v1/subscriptions/:follower/:followee",
+                                                                        url: "https://mystical-app-220509.appspot.com/_ah/api/myApi/v1/subscriptions/:follower/:followee",
                                                                         params: {
                                                                             follower: Session.current.name,
                                                                             followee: userName
@@ -145,7 +147,7 @@ function createUserPage(userName) {
                                                                 } else {
                                                                     m.request({
                                                                         method: "DELETE",
-                                                                        url: "http://localhost:8080/_ah/api/myApi/v1/subscriptions/:follower/:followee",
+                                                                        url: "https://mystical-app-220509.appspot.com/_ah/api/myApi/v1/subscriptions/:follower/:followee",
                                                                         params: {
                                                                             follower: Session.current.name,
                                                                             followee: userName
@@ -199,7 +201,7 @@ function createHashtagPage(hashtagParam) {
     if (hashtagParam != null && hashtagParam.length > 0) {
         m.request({
                 method: "GET",
-                url: "http://localhost:8080/_ah/api/myApi/v1/hashtagpost/:hashtag",
+                url: "https://mystical-app-220509.appspot.com/_ah/api/myApi/v1/hashtagpost/:hashtag",
                 params: {
                     hashtag: hashtagParam
                 },
@@ -245,7 +247,7 @@ function LikeCountGenerator() {
             postId = vnode.attrs.postIdParam
             m.request({
                     method: "GET",
-                    url: "http://localhost:8080/_ah/api/myApi/v1/likesnumber/:postId",
+                    url: "https://mystical-app-220509.appspot.com/_ah/api/myApi/v1/likesnumber/:postId",
                     params: {
                         postId: postId.id,
                     },
@@ -275,7 +277,7 @@ function LikeBtnGenerator() {
             m.request({
 
                     method: "GET",
-                    url: "http://localhost:8080/_ah/api/myApi/v1/likes/:postId/:userName",
+                    url: "https://mystical-app-220509.appspot.com/_ah/api/myApi/v1/likes/:postId/:userName",
                     params: {
                         postId: postId.id,
                         userName: Session.current.name
@@ -300,7 +302,7 @@ function LikeBtnGenerator() {
                         if (alreadyLiked == false) {
                             m.request({
                                     method: "PUT",
-                                    url: "http://localhost:8080/_ah/api/myApi/v1/likes/:postId/:parentId/:userName",
+                                    url: "https://mystical-app-220509.appspot.com/_ah/api/myApi/v1/likes/:postId/:parentId/:userName",
                                     params: {
                                         postId: postId.id,
                                         parentId: postId.parent.id,
@@ -317,7 +319,7 @@ function LikeBtnGenerator() {
                         } else {
                             m.request({
                                     method: "DELETE",
-                                    url: "http://localhost:8080/_ah/api/myApi/v1/likes/:postId/:userName",
+                                    url: "https://mystical-app-220509.appspot.com/_ah/api/myApi/v1/likes/:postId/:userName",
                                     params: {
                                         postId: postId.id,
                                         userName: Session.current.name
@@ -344,7 +346,7 @@ var MenuLogo = {
         return m("div", {class:"navbar-fixed"}, [
             m("nav", {class:"white"}, [
                 m("div", {class:"nav-wrapper container"}, [ // + white
-                    m("a[href='http://localhost:8080/']", {class:"brand-logo black-text"}, [
+                    m("a[href='https://mystical-app-220509.appspot.com/']", {class:"brand-logo black-text"}, [
                         m("i", {class:"material-icons"},"album"),
                     ], " TinyInsta"),
 
@@ -377,7 +379,7 @@ var MenuLogo = {
                             m("form", {
                                     id: "logoutForm",
                                     method: "GET",
-                                    action: "http://localhost:8080/logout",
+                                    action: "https://mystical-app-220509.appspot.com/logout",
                                 },
                                 [
                                     m("button.btn-flat[type=submit]", {class:"waves-effect waves-teal transparent", name:"action"}, [
