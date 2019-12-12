@@ -31,7 +31,7 @@ public class PostEndpoint {
 	private final int LIKE_COUNTER_MAX_SHARD = 20; // Number of shards for a like counter, can be increased to allow more load
 
 	/**
-	 *
+	 * 
 	 * sorting on the date needs to be done manually on this side because the result is a set of query
 	 * so it can not be sorted on an entity property (the timestamp date) with the appengine Query sorting method
 	 * not using a parent child relationship would allow for a single query and an easy sort on the timestamp property
