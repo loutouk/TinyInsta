@@ -14,7 +14,7 @@
 ![alt text](https://github.com/loutouk/TinyInsta/blob/master/myapp2018/data/previewB.png)
 
 ## Load Analysis
-The action of POSTing a Post is logarithmic with the number of elements to be posted because it is decoupled from the number of followers. It must even be considered as constant.
+The action of POSTing a Post should be considered constant no matter the number of followers we have because it is decoupled from the followers.
 
 ![alt text](https://github.com/loutouk/TinyInsta/blob/master/myapp2018/data/post.png)
 
