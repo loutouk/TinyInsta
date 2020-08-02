@@ -25,7 +25,7 @@ The action of GETing some Post is linear with the number of items we want to acc
 ![alt text](https://github.com/loutouk/TinyInsta/blob/master/myapp2018/data/get.png)
 
 
-The load analysis on the "like" button is hard to do because we would need a lot of powerful machines to simulate the contention. Anyway, the contention problem can easily be adressed by increasing the number of shards for each like counter. The default value of LIKE_COUNTER_MAX_SHARD is 20. But this value can be increased at any time in a transparent manner if needed.
+The load analysis on the "like" button is hard to perform because we would need a lot of powerful machines to simulate the contention. Anyway, the contention problem can easily be adressed by increasing the number of shards for each like counter. The default value of LIKE_COUNTER_MAX_SHARD is 20. But this value can be increased at any time in a transparent manner if needed.
 
 ## DataStore Kinds
 ### User
